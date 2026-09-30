@@ -1,0 +1,21 @@
+{
+  "env": {
+    "ANTHROPIC_BASE_URL": "http://127.0.0.1:8787"
+  },
+  "permissions": {
+    "allow": [
+      "Bash(uv add *)",
+      "Bash(mkdir -p /Users/rajpatel/Documents/GitHub/Capstone_Project/backend/app/core /Users/rajpatel/Documents/GitHub/Capstone_Project/backend/app/db /Users/rajpatel/Documents/GitHub/Capstone_Project/backend/app/schemas /Users/rajpatel/Documents/GitHub/Capstone_Project/backend/app/routers /Users/rajpatel/Documents/GitHub/Capstone_Project/backend/migrations/versions /Users/rajpatel/Documents/GitHub/Capstone_Project/backend/tests)",
+      "Bash(touch /Users/rajpatel/Documents/GitHub/Capstone_Project/backend/app/__init__.py /Users/rajpatel/Documents/GitHub/Capstone_Project/backend/app/core/__init__.py /Users/rajpatel/Documents/GitHub/Capstone_Project/backend/app/db/__init__.py /Users/rajpatel/Documents/GitHub/Capstone_Project/backend/app/schemas/__init__.py /Users/rajpatel/Documents/GitHub/Capstone_Project/backend/app/routers/__init__.py)",
+      "Bash(uv run *)",
+      "Bash(python3 -c \"from cryptography.fernet import Fernet; print\\(Fernet.generate_key\\(\\).decode\\(\\)\\)\")",
+      "Bash(TOTP_ENCRYPTION_KEY=__CMDSUB_OUTPUT__ uv run python -c ' *)",
+      "Bash(TOTP_ENCRYPTION_KEY=$\\(python3 -c \"from cryptography.fernet import Fernet; print\\(Fernet.generate_key\\(\\).decode\\(\\)\\)\"\\) uv run pytest tests/ -v)",
+      "Bash(TOTP_ENCRYPTION_KEY=$\\(python3 -c \"from cryptography.fernet import Fernet; print\\(Fernet.generate_key\\(\\).decode\\(\\)\\)\"\\) uv run alembic check)",
+      "WebFetch(domain:clerk.com)",
+      "WebFetch(domain:supabase.com)",
+      "Bash(uv remove *)",
+      "Bash(TOTP_ENCRYPTION_KEY=$\\(python3 -c \"from cryptography.fernet import Fernet; print\\(Fernet.generate_key\\(\\).decode\\(\\)\\)\"\\) uv run python -c \"from app.main import app; print\\('Import OK'\\)\")"
+    ]
+  }
+}

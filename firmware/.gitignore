@@ -1,0 +1,20 @@
+# CMake / CLion build output
+cmake-build-*/
+build/
+CMakeFiles/
+CMakeCache.txt
+cmake_install.cmake
+compile_commands.json
+*.cbp
+
+# Arduino build artifacts
+wokwi/build/
+
+# Compiled binaries
+*.bin
+*.elf
+*.map
+*.hex
+
+# macOS
+.DS_Store
