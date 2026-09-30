@@ -1,0 +1,18 @@
+{
+  "env": {
+    "ANTHROPIC_BASE_URL": "http://127.0.0.1:8787"
+  },
+  "permissions": {
+    "allow": [
+      "Bash(npm --version)",
+      "Bash(brew list *)",
+      "Bash(brew info *)",
+      "Bash(arduino-cli config *)",
+      "Bash(arduino-cli core *)",
+      "Bash(arduino-cli lib *)",
+      "Bash(arduino-cli compile *)",
+      "Bash(mkdir -p /Users/rajpatel/Documents/GitHub/Capstone_Project/firmware/wokwi/build)",
+      "Bash(cp /Users/rajpatel/Documents/GitHub/Capstone_Project/firmware/wokwi/sketch.ino /Users/rajpatel/Documents/GitHub/Capstone_Project/firmware/wokwi/build/build.ino)"
+    ]
+  }
+}

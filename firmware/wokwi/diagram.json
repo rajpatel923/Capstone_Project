@@ -1,0 +1,60 @@
+{
+  "version": 1,
+  "author": "FRZR BURN team",
+  "editor": "wokwi",
+  "parts": [
+    { "type": "wokwi-esp32-devkit-v1", "id": "esp", "top": 0, "left": 0, "attrs": {} },
+    { "type": "board-ssd1306", "id": "oled1", "top": 89.54, "left": -374.17, "attrs": {} },
+    {
+      "type": "wokwi-led-strip",
+      "id": "strip1",
+      "top": -140,
+      "left": 200,
+      "attrs": { "pixels": "3" }
+    },
+    { "type": "wokwi-membrane-keypad", "id": "keypad1", "top": -386, "left": -244, "attrs": {} },
+    { "type": "wokwi-slide-switch", "id": "doorsw", "top": 220, "left": 60, "attrs": {} },
+    { "type": "wokwi-buzzer", "id": "buzzer1", "top": 220, "left": 200, "attrs": {} },
+    {
+      "type": "wokwi-led",
+      "id": "lockled",
+      "top": 40,
+      "left": 260,
+      "attrs": { "color": "yellow" }
+    },
+    {
+      "type": "wokwi-resistor",
+      "id": "r1",
+      "top": 128.75,
+      "left": 259.2,
+      "attrs": { "value": "220" }
+    }
+  ],
+  "connections": [
+    [ "esp:TX0", "$serialMonitor:RX", "", [] ],
+    [ "esp:RX0", "$serialMonitor:TX", "", [] ],
+    [ "esp:D21", "oled1:SDA", "green", [] ],
+    [ "esp:D22", "oled1:SCL", "green", [] ],
+    [ "esp:3V3", "oled1:VCC", "red", [] ],
+    [ "esp:GND.1", "oled1:GND", "black", [] ],
+    [ "esp:D4", "strip1:DIN", "green", [] ],
+    [ "esp:3V3", "strip1:VDD", "red", [] ],
+    [ "esp:GND.2", "strip1:VSS", "black", [] ],
+    [ "esp:D13", "keypad1:R1", "green", [] ],
+    [ "esp:D12", "keypad1:R2", "green", [] ],
+    [ "esp:D14", "keypad1:R3", "green", [] ],
+    [ "esp:D27", "keypad1:R4", "green", [] ],
+    [ "esp:D26", "keypad1:C1", "blue", [] ],
+    [ "esp:D25", "keypad1:C2", "blue", [] ],
+    [ "esp:D33", "keypad1:C3", "blue", [] ],
+    [ "esp:D32", "keypad1:C4", "blue", [] ],
+    [ "esp:D5", "doorsw:2", "green", [] ],
+    [ "doorsw:1", "esp:GND.3", "black", [] ],
+    [ "esp:D19", "buzzer1:2", "green", [] ],
+    [ "buzzer1:1", "esp:GND.1", "black", [] ],
+    [ "esp:D18", "r1:1", "green", [] ],
+    [ "r1:2", "lockled:A", "green", [] ],
+    [ "lockled:C", "esp:GND.1", "black", [] ]
+  ],
+  "dependencies": {}
+}

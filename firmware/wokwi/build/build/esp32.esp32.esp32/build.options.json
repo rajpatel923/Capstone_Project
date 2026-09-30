@@ -1,0 +1,9 @@
+{
+  "additionalFiles": "",
+  "compiler.optimization_flags": "-Os",
+  "customBuildProperties": "",
+  "fqbn": "esp32:esp32:esp32",
+  "hardwareFolders": "/Users/rajpatel/Library/Arduino15/packages/esp32/hardware/esp32/3.3.12,/Users/rajpatel/Library/Arduino15/packages/esp32/hardware/esp32/3.3.12",
+  "otherLibrariesFolders": "/Users/rajpatel/Documents/Arduino/libraries",
+  "sketchLocation": "/Users/rajpatel/Documents/GitHub/Capstone_Project/firmware/wokwi/build"
+}
