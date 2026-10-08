@@ -1,4 +1,4 @@
 [wokwi]
 version = 1
-elf = "build/build.ino.elf"
-firmware = "build/build.ino.bin"
+elf = "build/wokwi.ino.elf"
+firmware = "build/wokwi.ino.bin"

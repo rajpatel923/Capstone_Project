@@ -1,7 +1,4 @@
 {
-  "env": {
-    "ANTHROPIC_BASE_URL": "http://127.0.0.1:8787"
-  },
   "permissions": {
     "allow": [
       "Bash(uv add *)",
@@ -15,7 +12,14 @@
       "WebFetch(domain:clerk.com)",
       "WebFetch(domain:supabase.com)",
       "Bash(uv remove *)",
-      "Bash(TOTP_ENCRYPTION_KEY=$\\(python3 -c \"from cryptography.fernet import Fernet; print\\(Fernet.generate_key\\(\\).decode\\(\\)\\)\"\\) uv run python -c \"from app.main import app; print\\('Import OK'\\)\")"
+      "Bash(TOTP_ENCRYPTION_KEY=$\\(python3 -c \"from cryptography.fernet import Fernet; print\\(Fernet.generate_key\\(\\).decode\\(\\)\\)\"\\) uv run python -c \"from app.main import app; print\\('Import OK'\\)\")",
+      "Bash(git *)",
+      "WebSearch",
+      "Bash(nc -zv db.cyezycfnhliltriqdxvp.supabase.co 5432)",
+      "Bash(nc -zv db.cyezycfnhliltriqdxvp.supabase.co 6543)",
+      "Bash(ping *)",
+      "Bash(arduino-cli compile *)",
+      "Bash(docker compose exec *)"
     ]
   }
 }

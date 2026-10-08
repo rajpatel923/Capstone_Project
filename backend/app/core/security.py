@@ -40,13 +40,16 @@ def generate_totp_secret() -> str:
     return pyotp.random_base32()
 
 
+TOTP_INTERVAL = 60  # seconds per code window
+
+
 def get_provisioning_uri(secret: str, member_id: str, issuer: str = "CTF Fridge") -> str:
-    return pyotp.TOTP(secret).provisioning_uri(name=member_id, issuer_name=issuer)
+    return pyotp.TOTP(secret, interval=TOTP_INTERVAL).provisioning_uri(name=member_id, issuer_name=issuer)
 
 
 def verify_totp(encrypted_secret: str, code: str) -> bool:
     secret = decrypt_totp_secret(encrypted_secret)
-    totp = pyotp.TOTP(secret)
+    totp = pyotp.TOTP(secret, interval=TOTP_INTERVAL)
     return totp.verify(code, valid_window=1)
 
 

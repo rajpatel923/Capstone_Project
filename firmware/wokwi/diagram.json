@@ -28,6 +28,13 @@
       "top": 128.75,
       "left": 259.2,
       "attrs": { "value": "220" }
+    },
+    {
+      "type": "wokwi-servo",
+      "id": "servo1",
+      "top": 280,
+      "left": -150,
+      "attrs": {}
     }
   ],
   "connections": [
@@ -54,7 +61,10 @@
     [ "buzzer1:1", "esp:GND.1", "black", [] ],
     [ "esp:D18", "r1:1", "green", [] ],
     [ "r1:2", "lockled:A", "green", [] ],
-    [ "lockled:C", "esp:GND.1", "black", [] ]
+    [ "lockled:C", "esp:GND.1", "black", [] ],
+    [ "esp:D23", "servo1:SIG", "orange", [] ],
+    [ "esp:VIN", "servo1:V+", "red", [] ],
+    [ "esp:GND.1", "servo1:GND", "black", [] ]
   ],
   "dependencies": {}
 }
