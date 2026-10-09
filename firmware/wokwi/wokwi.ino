@@ -24,7 +24,7 @@
 // For a deployed backend, replace BACKEND_HOST with your public URL.
 #define WIFI_SSID       "Wokwi-GUEST"
 #define WIFI_PASSWORD   ""
-#define BACKEND_HOST    "https://little-moose-hang.loca.lt"  // replace with your ngrok URL
+#define BACKEND_HOST    "https://ripe-trees-try.loca.lt"  // replace with your ngrok URL
 #define DEVICE_ID       1
 #define DEVICE_API_KEY  "ce1a968467d7eca23afa6c36bc44052a87242805b582f3f2b3ba969a1ecae113"
 

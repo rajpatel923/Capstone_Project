@@ -16,12 +16,13 @@ _clerk = Clerk(bearer_auth=settings.clerk_secret_key)
 
 
 def authenticate_clerk_request(request: Requestish) -> str:
-    """Verify a Clerk session JWT from the request headers.
+    """Verify a Clerk session JWT; return Clerk user_id."""
+    payload = get_clerk_payload(request)
+    return payload["sub"]
 
-    Uses offline PEM verification if CLERK_JWT_KEY is set, otherwise
-    falls back to online JWKS lookup handled by the SDK.
-    Returns the Clerk user_id (sub claim).
-    """
+
+def get_clerk_payload(request: Requestish) -> dict:
+    """Verify a Clerk session JWT; return the full decoded payload."""
     opts = AuthenticateRequestOptions(
         authorized_parties=settings.cors_origins,
         jwt_key=settings.clerk_jwt_key or None,
@@ -29,7 +30,13 @@ def authenticate_clerk_request(request: Requestish) -> str:
     state = _clerk.authenticate_request(request, opts)
     if not state.is_signed_in:
         raise ValueError("Request is not signed in")
-    return state.payload["sub"]
+    return state.payload
+
+
+def get_clerk_user_role(user_id: str) -> str | None:
+    """Fetch publicMetadata.role for a user via the Clerk backend API."""
+    user = _clerk.users.get(user_id=user_id)
+    return (user.public_metadata or {}).get("role")
 
 
 # ---------------------------------------------------------------------------

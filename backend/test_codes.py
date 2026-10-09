@@ -8,6 +8,7 @@ Usage:
 Shows the current 10-digit keypad code for every active student.
 Refreshes every second with a countdown until the TOTP rotates (every 30s).
 """
+
 import asyncio
 import os
 import sys
