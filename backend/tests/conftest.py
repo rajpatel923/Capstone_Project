@@ -1,3 +1,13 @@
+import os
+
+# Must be set before any app imports so Settings() validation is skipped
+os.environ.setdefault("SKIP_SECRET_VALIDATION", "true")
+# Provide a valid Fernet key so encrypt/decrypt works in tests
+os.environ.setdefault(
+    "TOTP_ENCRYPTION_KEY",
+    "gKolUH3FZl04_kQcbzik96fEEpnxXfs0GyzmsIsUrV8=",
+)
+
 import pytest
 import pytest_asyncio
 from httpx import ASGITransport, AsyncClient
