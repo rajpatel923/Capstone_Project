@@ -10,6 +10,7 @@ import {
   Server,
   Activity,
   Package,
+  BookOpen,
 } from "lucide-react"
 
 const NAV_ITEMS = [
@@ -18,6 +19,7 @@ const NAV_ITEMS = [
   { href: "/devices", label: "Devices", icon: Server },
   { href: "/events", label: "Events", icon: Activity },
   { href: "/items", label: "Items", icon: Package },
+  { href: "/docs", label: "Documentation", icon: BookOpen },
 ]
 
 export function Sidebar() {
