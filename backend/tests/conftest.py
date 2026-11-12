@@ -1,5 +1,14 @@
+import os
 import pathlib
 from datetime import datetime, timezone
+
+# Must be set before any app imports so Settings() validation is skipped
+os.environ.setdefault("SKIP_SECRET_VALIDATION", "true")
+# Provide a valid Fernet key so encrypt/decrypt works in tests
+os.environ.setdefault(
+    "TOTP_ENCRYPTION_KEY",
+    "gKolUH3FZl04_kQcbzik96fEEpnxXfs0GyzmsIsUrV8=",
+)
 
 import pytest
 import pytest_asyncio
@@ -18,6 +27,7 @@ RESULTS_PATH = pathlib.Path(__file__).parent / "test_results.md"
 # ---------------------------------------------------------------------------
 # DB / client fixtures
 # ---------------------------------------------------------------------------
+
 
 @pytest_asyncio.fixture(scope="session")
 async def engine():
@@ -51,9 +61,11 @@ async def client(db_session: AsyncSession):
 # Admin auth mock
 # ---------------------------------------------------------------------------
 
+
 @pytest.fixture(autouse=False)
 def fake_admin(client):
     """Override require_admin so endpoints don't need a live Clerk JWT."""
+
     async def _fake():
         return "test-clerk-user"
 
@@ -65,6 +77,7 @@ def fake_admin(client):
 # ---------------------------------------------------------------------------
 # Markdown results reporter
 # ---------------------------------------------------------------------------
+
 
 _results: list[tuple[str, str, str | None]] = []  # (nodeid, outcome, longrepr)
 

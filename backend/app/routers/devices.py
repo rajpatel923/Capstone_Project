@@ -1,14 +1,14 @@
 from datetime import datetime, timezone
 
 from fastapi import APIRouter, HTTPException, Request, status
-from sqlalchemy import select
+from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.config import settings
 from app.core.dependencies import DbDep
 from app.core.rate_limit import limiter
 from app.core.security import hash_api_key, verify_totp
-from app.db.models import Device, Student, UnlockEligibility, UnlockEvent, UnlockResult
+from app.db.models import CreditLedger, Device, Student, UnlockEligibility, UnlockEvent, UnlockResult
 from app.schemas.device import (
     DeviceEventRequest,
     DeviceStateResponse,
@@ -91,8 +91,15 @@ async def validate_code(device_id: int, body: ValidateCodeRequest, request: Requ
         return ValidateCodeResponse(valid=False, reason="no_eligibility")
 
     eligibility.consumed_at = now
+
+    balance_result = await db.execute(
+        select(func.coalesce(func.sum(CreditLedger.delta), 0))
+        .where(CreditLedger.student_id == student.id)
+    )
+    credit_balance = balance_result.scalar_one()
+
     await _log_event(db, device, member_id_raw, UnlockResult.granted, student.id)
-    return ValidateCodeResponse(valid=True, reason="granted")
+    return ValidateCodeResponse(valid=True, reason="granted", member_id=student.member_id, credit_balance=credit_balance)
 
 
 @router.post("/{device_id}/events", status_code=status.HTTP_204_NO_CONTENT)

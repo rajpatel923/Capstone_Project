@@ -10,7 +10,7 @@ router = APIRouter(prefix="/redemptions", tags=["redemptions"])
 
 @router.post("", response_model=RedemptionResponse, status_code=status.HTTP_201_CREATED)
 async def create_redemption(body: RedemptionCreate, db: DbDep, _admin: AdminDep):
-    student_result = await db.execute(select(Student).where(Student.id == body.student_id))
+    student_result = await db.execute(select(Student).where(Student.member_id == body.member_id))
     student = student_result.scalar_one_or_none()
     if not student or not student.active:
         raise HTTPException(status_code=404, detail="Student not found or inactive")
@@ -51,4 +51,18 @@ async def create_redemption(body: RedemptionCreate, db: DbDep, _admin: AdminDep)
     db.add(ledger)
     await db.commit()
     await db.refresh(redemption)
-    return RedemptionResponse.model_validate(redemption)
+
+    balance_result = await db.execute(
+        select(func.coalesce(func.sum(CreditLedger.delta), 0))
+        .where(CreditLedger.student_id == student.id)
+    )
+    credit_balance_after = balance_result.scalar_one()
+
+    return RedemptionResponse(
+        id=redemption.id,
+        student_id=redemption.student_id,
+        item_id=redemption.item_id,
+        credits_spent=redemption.credits_spent,
+        credit_balance_after=credit_balance_after,
+        created_at=redemption.created_at,
+    )

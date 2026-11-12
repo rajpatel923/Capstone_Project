@@ -1,3 +1,6 @@
+import os
+
+from pydantic import model_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
@@ -13,6 +16,18 @@ class Settings(BaseSettings):
     rate_limit_per_minute: int = 10
     cors_origins: list[str] = ["http://localhost:3000"]
     credit_conversion_rate: int = 10  # points // rate = credits
+
+    @model_validator(mode="after")
+    def _check_required_secrets(self) -> "Settings":
+        if os.getenv("SKIP_SECRET_VALIDATION"):
+            return self
+        if not self.clerk_secret_key:
+            raise ValueError("CLERK_SECRET_KEY is required")
+        if not self.totp_encryption_key:
+            raise ValueError("TOTP_ENCRYPTION_KEY is required")
+        if not self.range_webhook_secret:
+            raise ValueError("RANGE_WEBHOOK_SECRET is required")
+        return self
 
 
 settings = Settings()

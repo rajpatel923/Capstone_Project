@@ -1,4 +1,10 @@
+from fastapi import Request
 from slowapi import Limiter
-from slowapi.util import get_remote_address
 
-limiter = Limiter(key_func=get_remote_address)
+
+def _device_key(request: Request) -> str:
+    device_id = request.path_params.get("device_id", "unknown")
+    return f"device:{device_id}"
+
+
+limiter = Limiter(key_func=_device_key)

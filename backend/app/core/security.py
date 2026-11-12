@@ -47,7 +47,7 @@ def generate_totp_secret() -> str:
     return pyotp.random_base32()
 
 
-TOTP_INTERVAL = 60  # seconds per code window
+TOTP_INTERVAL = 30  # seconds per code window
 
 
 def get_provisioning_uri(secret: str, member_id: str, issuer: str = "CTF Fridge") -> str:
