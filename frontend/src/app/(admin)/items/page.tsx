@@ -10,7 +10,7 @@ import { useItems } from "@/hooks/use-items"
 import { useStudents } from "@/hooks/use-students"
 
 export default function ItemsPage() {
-  const { data: items, isLoading, createItem, createRedemption } = useItems()
+  const { data: items, isLoading, error, createItem, createRedemption } = useItems()
   const { data: studentsData } = useStudents()
   const [itemFormOpen, setItemFormOpen] = useState(false)
   const [redemptionFormOpen, setRedemptionFormOpen] = useState(false)
@@ -35,6 +35,12 @@ export default function ItemsPage() {
           </Button>
         </div>
       </div>
+
+      {error && (
+        <div className="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+          Failed to load data: {error.message}
+        </div>
+      )}
 
       <div className="rounded-lg border bg-white">
         <ItemsTable items={items} loading={isLoading} />

@@ -8,7 +8,7 @@ import { useDevices } from "@/hooks/use-devices"
 import { useEvents } from "@/hooks/use-events"
 
 export default function DashboardPage() {
-  const { data: studentsData, isLoading: studentsLoading } = useStudents()
+  const { data: studentsData, isLoading: studentsLoading, error: studentsError } = useStudents()
   const { data: devices, isLoading: devicesLoading } = useDevices()
   const { items: events, isLoading: eventsLoading } = useEvents()
 
@@ -26,11 +26,18 @@ export default function DashboardPage() {
         </p>
       </div>
 
+      {studentsError && (
+        <div className="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+          Failed to load data: {studentsError.message}
+        </div>
+      )}
+
       {/* Stats */}
       <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
         <StatsCard
           title="Total Students"
           value={totalStudents}
+          subtitle={studentsData?.next_cursor ? "50+ enrolled" : undefined}
           icon={Users}
           loading={studentsLoading}
         />

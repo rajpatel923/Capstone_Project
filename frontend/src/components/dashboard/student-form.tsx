@@ -19,10 +19,11 @@ type Props = {
   onOpenChange: (v: boolean) => void
   mode: "create" | "edit"
   student?: StudentResponse
-  onSubmit: (data: { full_name: string; email: string }) => Promise<{ provisioning_uri?: string }>
+  onSubmit: (data: { member_id: string; full_name: string; email: string }) => Promise<{ totp_provisioning_uri?: string }>
 }
 
 export function StudentForm({ open, onOpenChange, mode, student, onSubmit }: Props) {
+  const [memberId, setMemberId] = useState("")
   const [fullName, setFullName] = useState(student?.full_name ?? "")
   const [email, setEmail] = useState(student?.email ?? "")
   const [loading, setLoading] = useState(false)
@@ -34,9 +35,9 @@ export function StudentForm({ open, onOpenChange, mode, student, onSubmit }: Pro
     e.preventDefault()
     setLoading(true)
     try {
-      const result = await onSubmit({ full_name: fullName, email })
-      if (result.provisioning_uri) {
-        setQrUri(result.provisioning_uri)
+      const result = await onSubmit({ member_id: memberId, full_name: fullName, email })
+      if (result.totp_provisioning_uri) {
+        setQrUri(result.totp_provisioning_uri)
       } else {
         handleClose()
       }
@@ -48,6 +49,7 @@ export function StudentForm({ open, onOpenChange, mode, student, onSubmit }: Pro
   }
 
   const handleClose = () => {
+    setMemberId("")
     setFullName(student?.full_name ?? "")
     setEmail(student?.email ?? "")
     setQrUri(null)
@@ -93,6 +95,23 @@ export function StudentForm({ open, onOpenChange, mode, student, onSubmit }: Pro
               </DialogTitle>
             </DialogHeader>
             <div className="grid gap-4 py-4">
+              {mode === "create" && (
+                <div className="grid gap-1.5">
+                  <label className="text-sm font-medium" htmlFor="member-id">
+                    Member ID
+                  </label>
+                  <Input
+                    id="member-id"
+                    value={memberId}
+                    onChange={(e) => setMemberId(e.target.value.replace(/\D/g, "").slice(0, 4))}
+                    placeholder="4-digit ID"
+                    pattern="[0-9]{4}"
+                    maxLength={4}
+                    required={mode === "create"}
+                  />
+                  <p className="text-xs text-muted-foreground">Unique 4-digit number, e.g. the student&apos;s ICS membership number</p>
+                </div>
+              )}
               <div className="grid gap-1.5">
                 <label className="text-sm font-medium" htmlFor="full-name">
                   Full Name
