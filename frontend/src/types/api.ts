@@ -5,10 +5,12 @@ export type StudentResponse = {
   email: string
   active: boolean
   created_at: string
+  credit_balance: number
+  pending_eligibility_count: number
 }
 
 export type StudentEnrollResponse = StudentResponse & {
-  provisioning_uri: string
+  totp_provisioning_uri: string
 }
 
 export type StudentListResponse = {
@@ -17,6 +19,7 @@ export type StudentListResponse = {
 }
 
 export type StudentCreate = {
+  member_id: string
   full_name: string
   email: string
 }
@@ -91,10 +94,11 @@ export type RedemptionResponse = {
   student_id: number
   item_id: number
   credits_spent: number
+  credit_balance_after: number
   created_at: string
 }
 
 export type RedemptionCreate = {
-  student_id: number
+  member_id: string
   item_id: number
 }

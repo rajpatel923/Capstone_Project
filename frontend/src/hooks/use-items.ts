@@ -39,7 +39,7 @@ export function useItems() {
 
   const createRedemption = async (body: RedemptionCreate): Promise<RedemptionResponse> => {
     const result = await redemptionsApi.create(getToken, body)
-    toast.success(`Redeemed ${result.credits_spent} credits`)
+    toast.success(`Redeemed ${result.credits_spent} credits · Balance: ${result.credit_balance_after}`)
     await fetch()
     return result
   }

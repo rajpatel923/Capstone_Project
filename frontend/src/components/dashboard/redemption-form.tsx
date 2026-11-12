@@ -9,7 +9,6 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog"
-import { Input } from "@/components/ui/input"
 import {
   Select,
   SelectContent,
@@ -36,12 +35,14 @@ export function RedemptionForm({ open, onOpenChange, items, students, onSubmit }
   const selectedItem = items.find((i) => String(i.id) === itemId)
   const selectedStudent = students.find((s) => String(s.id) === studentId)
 
+  const insufficientCredits = !!(selectedStudent && selectedItem && selectedStudent.credit_balance < selectedItem.cost_credits)
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     if (!studentId || !itemId) return
     setLoading(true)
     try {
-      await onSubmit({ student_id: Number(studentId), item_id: Number(itemId) })
+      await onSubmit({ member_id: selectedStudent!.member_id, item_id: Number(itemId) })
       setStudentId("")
       setItemId("")
       onOpenChange(false)
@@ -78,6 +79,7 @@ export function RedemptionForm({ open, onOpenChange, items, students, onSubmit }
               {selectedStudent && (
                 <p className="text-xs text-muted-foreground">
                   Member ID: <span className="font-mono">{selectedStudent.member_id}</span>
+                  {" · "}Credits: <span className="font-mono font-semibold">{selectedStudent.credit_balance}</span>
                 </p>
               )}
             </div>
@@ -104,13 +106,16 @@ export function RedemptionForm({ open, onOpenChange, items, students, onSubmit }
                   · Stock: {selectedItem.stock_qty}
                 </p>
               )}
+              {insufficientCredits && (
+                <p className="text-xs text-red-600">Insufficient credits ({selectedStudent!.credit_balance} available, {selectedItem!.cost_credits} needed)</p>
+              )}
             </div>
           </div>
           <DialogFooter>
             <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
               Cancel
             </Button>
-            <Button type="submit" disabled={loading || !studentId || !itemId}>
+            <Button type="submit" disabled={loading || !studentId || !itemId || insufficientCredits}>
               {loading ? "Processing…" : "Redeem"}
             </Button>
           </DialogFooter>

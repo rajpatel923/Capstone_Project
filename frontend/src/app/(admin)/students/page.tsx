@@ -10,7 +10,7 @@ import { toast } from "sonner"
 import type { StudentResponse } from "@/types/api"
 
 export default function StudentsPage() {
-  const { data, isLoading, createStudent, updateStudent, toggleActive, resetTotp } = useStudents()
+  const { data, isLoading, error, hasMore, loadMore, createStudent, updateStudent, toggleActive, resetTotp } = useStudents()
   const [formOpen, setFormOpen] = useState(false)
   const [editStudent, setEditStudent] = useState<StudentResponse | undefined>()
 
@@ -30,7 +30,7 @@ export default function StudentsPage() {
       // Show QR via a re-use of the student form in QR-only mode
       // Simplest UX: open form with provisioning_uri pre-set
       // We trigger this via a custom state
-      setPendingQr(result.provisioning_uri)
+      setPendingQr(result.totp_provisioning_uri)
     } catch (err) {
       toast.error((err as Error).message)
     }
@@ -53,6 +53,12 @@ export default function StudentsPage() {
         </Button>
       </div>
 
+      {error && (
+        <div className="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+          Failed to load data: {error.message}
+        </div>
+      )}
+
       <div className="rounded-lg border bg-white">
         <StudentTable
           students={data?.items ?? []}
@@ -63,16 +69,24 @@ export default function StudentsPage() {
         />
       </div>
 
+      {hasMore && (
+        <div className="flex justify-center p-4">
+          <Button variant="outline" size="sm" onClick={loadMore}>
+            Load more
+          </Button>
+        </div>
+      )}
+
       {/* Create/Edit form */}
       <StudentForm
         open={formOpen}
         onOpenChange={handleFormClose}
         mode={editStudent ? "edit" : "create"}
         student={editStudent}
-        onSubmit={(data) =>
+        onSubmit={({ member_id: _mid, ...rest }) =>
           editStudent
-            ? updateStudent(editStudent.id, data).then(() => ({}))
-            : createStudent(data)
+            ? updateStudent(editStudent.id, rest).then(() => ({}))
+            : createStudent({ member_id: _mid, ...rest })
         }
       />
 
@@ -82,7 +96,7 @@ export default function StudentsPage() {
           open={pendingQr !== null}
           onOpenChange={(v) => { if (!v) setPendingQr(null) }}
           mode="create"
-          onSubmit={async () => ({ provisioning_uri: pendingQr! })}
+          onSubmit={async () => ({ totp_provisioning_uri: pendingQr! })}
         />
       )}
     </div>
