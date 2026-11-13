@@ -1,5 +1,6 @@
-from pathlib import Path
+import os
 
+from pydantic import model_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 # Try root-level .env first so a single file at the repo root works for everything.
@@ -24,14 +25,17 @@ class Settings(BaseSettings):
     cors_origins: list[str] = ["http://localhost:3000"]
     credit_conversion_rate: int = 10  # points // rate = credits
 
-    # SMTP — all optional. If smtp_host is empty, enrollment emails are skipped silently.
-    smtp_host: str = ""
-    smtp_port: int = 587
-    smtp_username: str = ""
-    smtp_password: str = ""
-    smtp_from: str = "noreply@example.com"
-    smtp_from_name: str = "FRZR BURN"
-    smtp_starttls: bool = True
+    @model_validator(mode="after")
+    def _check_required_secrets(self) -> "Settings":
+        if os.getenv("SKIP_SECRET_VALIDATION"):
+            return self
+        if not self.clerk_secret_key:
+            raise ValueError("CLERK_SECRET_KEY is required")
+        if not self.totp_encryption_key:
+            raise ValueError("TOTP_ENCRYPTION_KEY is required")
+        if not self.range_webhook_secret:
+            raise ValueError("RANGE_WEBHOOK_SECRET is required")
+        return self
 
 
 settings = Settings()

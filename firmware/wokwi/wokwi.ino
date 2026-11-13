@@ -18,15 +18,15 @@
 #include <HTTPClient.h>
 #include <ArduinoJson.h>
 
-// ---- WiFi & Backend config ----
-// Wokwi-GUEST is the built-in virtual network — no password needed.
-// When running via wokwi-cli locally, host machine is at 10.0.2.2.
-// For a deployed backend, replace BACKEND_HOST with your public URL.
-#define WIFI_SSID       "Wokwi-GUEST"
-#define WIFI_PASSWORD   ""
-#define BACKEND_HOST    "https://ripe-trees-try.loca.lt"  // replace with your ngrok URL
+// ============================================================
+// DEPLOYMENT CONFIG — update these before flashing
+// ============================================================
+#define WIFI_SSID       "Wokwi-GUEST"   // For Wokwi sim; replace for real hardware
+#define WIFI_PASSWORD   ""               // Wokwi-GUEST needs no password
+#define BACKEND_HOST    "https://ripe-trees-try.loca.lt"  // Replace with your prod URL (no trailing slash)
 #define DEVICE_ID       1
 #define DEVICE_API_KEY  "ce1a968467d7eca23afa6c36bc44052a87242805b582f3f2b3ba969a1ecae113"
+// ============================================================
 
 // ---- OLED ----
 #define SCREEN_WIDTH 128
@@ -69,6 +69,11 @@ String enteredCode  = "";
 bool   isUnlocked   = false;
 bool   alarmActive  = false;
 unsigned long unlockTime = 0;
+unsigned long lastHeartbeat = 0;
+const unsigned long HEARTBEAT_INTERVAL = 300000;  // 5 minutes in ms
+
+// Forward declaration
+void sendDeviceEvent(const char* eventType);
 
 // -------------------------------------------------------
 
@@ -125,6 +130,7 @@ void triggerAlarm() {
   showOLED("!! ALARM !!", "Forced open!");
   tone(BUZZER_PIN, 2000, 500);
   Serial.println("[LOCK] !! ALARM !! Door forced open while locked");
+  sendDeviceEvent("forced_open");
 }
 
 // -------------------------------------------------------
@@ -146,6 +152,8 @@ void connectWiFi() {
     showOLED("WiFi connected", WiFi.localIP().toString().c_str());
     setStrip(0, 0, 255);
     delay(1000);
+    lastHeartbeat = millis();
+    sendDeviceEvent("heartbeat");
   } else {
     Serial.println("WiFi failed — check WIFI_SSID/WIFI_PASSWORD");
     showOLED("WiFi FAILED", "Check config");
@@ -201,6 +209,27 @@ bool validateCodeWithBackend(const String& code, String& reason) {
   return granted;
 }
 
+// Posts a device event (heartbeat, forced_open, armed) to the backend.
+void sendDeviceEvent(const char* eventType) {
+  if (WiFi.status() != WL_CONNECTED) return;
+
+  WiFiClientSecure client;
+  client.setInsecure();
+
+  HTTPClient http;
+  String url = String(BACKEND_HOST) + "/devices/" + String(DEVICE_ID) + "/events";
+  http.begin(client, url);
+  http.addHeader("Content-Type", "application/json");
+  http.addHeader("x-device-key", DEVICE_API_KEY);
+  http.addHeader("ngrok-skip-browser-warning", "true");
+  http.setTimeout(5000);
+
+  String payload = String("{\"event_type\":\"") + eventType + "\"}";
+  int httpCode = http.POST(payload);
+  Serial.printf("[EVENT] %s -> HTTP %d\n", eventType, httpCode);
+  http.end();
+}
+
 // -------------------------------------------------------
 
 void setup() {
@@ -228,6 +257,19 @@ void loop() {
     doLock();
   }
 
+  // Reconnect WiFi if dropped
+  if (WiFi.status() != WL_CONNECTED) {
+    Serial.println("[WIFI] Connection lost -- reconnecting...");
+    showOLED("WiFi lost", "Reconnecting...");
+    connectWiFi();
+  }
+
+  // Periodic heartbeat
+  if (millis() - lastHeartbeat >= HEARTBEAT_INTERVAL) {
+    lastHeartbeat = millis();
+    sendDeviceEvent("heartbeat");
+  }
+
   // ---- Force-open alarm (door opened while locked) ----
   bool doorOpen = (digitalRead(DOOR_PIN) == LOW);
   if (doorOpen && !isUnlocked && !alarmActive) {
@@ -247,11 +289,29 @@ void loop() {
 
   if (key == '#') {
     Serial.printf("[KEYPAD] Code submitted: %s (%d digits)\n", enteredCode.c_str(), enteredCode.length());
+
+    // Pre-validate before hitting backend
+    if (enteredCode.length() != 10) {
+      String msg = "Need 10 digits";
+      denyAccess(msg.c_str());
+      enteredCode = "";
+      return;
+    }
+
     String reason;
     if (validateCodeWithBackend(enteredCode, reason)) {
       doUnlock();
     } else {
-      denyAccess(reason.c_str());
+      // Map backend reason codes to friendly messages
+      String friendlyReason;
+      if (reason == "invalid_format")       friendlyReason = "Invalid format";
+      else if (reason == "unknown_member")  friendlyReason = "ID not found";
+      else if (reason == "invalid_totp")    friendlyReason = "Wrong TOTP code";
+      else if (reason == "no_eligibility")  friendlyReason = "No unlock earned";
+      else if (reason == "member_inactive") friendlyReason = "Account inactive";
+      else if (reason == "No WiFi")         friendlyReason = "No WiFi";
+      else                                  friendlyReason = reason;
+      denyAccess(friendlyReason.c_str());
     }
     enteredCode = "";
 

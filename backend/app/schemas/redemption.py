@@ -4,7 +4,7 @@ from pydantic import BaseModel
 
 
 class RedemptionCreate(BaseModel):
-    student_id: int
+    member_id: str  # was student_id: int
     item_id: int
 
 
@@ -15,4 +15,5 @@ class RedemptionResponse(BaseModel):
     student_id: int
     item_id: int
     credits_spent: int
+    credit_balance_after: int
     created_at: datetime

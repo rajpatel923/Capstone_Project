@@ -6,7 +6,7 @@ import { DeviceTable } from "@/components/dashboard/device-table"
 import { useDevices } from "@/hooks/use-devices"
 
 export default function DevicesPage() {
-  const { data, isLoading, refetch } = useDevices()
+  const { data, isLoading, error, refetch } = useDevices()
   const onlineCount = data.filter((d) => d.online).length
 
   return (
@@ -16,6 +16,7 @@ export default function DevicesPage() {
           <h1 className="text-xl font-semibold">Devices</h1>
           <p className="mt-1 text-sm text-muted-foreground">
             {onlineCount} of {data.length} online — auto-refreshes every 30s
+            {error && <span className="ml-2 text-amber-600">(last refresh failed)</span>}
           </p>
         </div>
         <Button variant="outline" size="sm" onClick={refetch}>

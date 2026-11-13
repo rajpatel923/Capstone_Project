@@ -1,8 +1,8 @@
-import random
-import string
+from datetime import datetime, timezone
 
 from fastapi import APIRouter, HTTPException, Query, status
-from sqlalchemy import select
+from sqlalchemy import func, select
+from sqlalchemy import update as sa_update
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.config import settings
@@ -12,7 +12,7 @@ from app.core.security import (
     generate_totp_secret,
     get_provisioning_uri,
 )
-from app.db.models import Student
+from app.db.models import CreditLedger, Student, UnlockEligibility
 from app.schemas.student import (
     BulkEnrollRequest,
     BulkEnrollResponse,
@@ -29,28 +29,54 @@ from app.services.email import send_enrollment_email
 router = APIRouter(prefix="/students", tags=["students"])
 
 
-async def _generate_unique_member_id(db: AsyncSession) -> str:
-    for _ in range(20):
-        candidate = "".join(random.choices(string.digits, k=4))
-        existing = await db.execute(select(Student).where(Student.member_id == candidate))
-        if existing.scalar_one_or_none() is None:
-            return candidate
-    raise RuntimeError("Could not generate unique member_id after 20 attempts")
+async def _enrich_student(student: Student, db: AsyncSession) -> StudentResponse:
+    balance_result = await db.execute(
+        select(func.coalesce(func.sum(CreditLedger.delta), 0))
+        .where(CreditLedger.student_id == student.id)
+    )
+    balance = balance_result.scalar_one()
+
+    now = datetime.now(timezone.utc)
+    elig_result = await db.execute(
+        select(func.count(UnlockEligibility.id))
+        .where(
+            UnlockEligibility.student_id == student.id,
+            UnlockEligibility.consumed_at.is_(None),
+            UnlockEligibility.expires_at > now,
+        )
+    )
+    pending = elig_result.scalar_one()
+
+    return StudentResponse(
+        id=student.id,
+        member_id=student.member_id,
+        full_name=student.full_name,
+        email=student.email,
+        active=student.active,
+        created_at=student.created_at,
+        credit_balance=balance,
+        pending_eligibility_count=pending,
+    )
 
 
 @router.post("", response_model=StudentEnrollResponse, status_code=status.HTTP_201_CREATED)
 async def enroll_student(body: StudentCreate, db: DbDep, _admin: AdminDep):
+    # Check for duplicate member_id
+    existing_mid = await db.execute(select(Student).where(Student.member_id == body.member_id))
+    if existing_mid.scalar_one_or_none():
+        raise HTTPException(status_code=409, detail="member_id already in use")
+
+    # Check for duplicate email
     existing = await db.execute(select(Student).where(Student.email == body.email))
     if existing.scalar_one_or_none():
         raise HTTPException(status_code=409, detail="Email already enrolled")
 
-    member_id = await _generate_unique_member_id(db)
     secret = generate_totp_secret()
     encrypted = encrypt_totp_secret(secret)
-    provisioning_uri = get_provisioning_uri(secret, member_id)
+    provisioning_uri = get_provisioning_uri(secret, body.member_id)
 
     student = Student(
-        member_id=member_id,
+        member_id=body.member_id,
         full_name=body.full_name,
         email=body.email,
         totp_secret_encrypted=encrypted,
@@ -58,7 +84,9 @@ async def enroll_student(body: StudentCreate, db: DbDep, _admin: AdminDep):
     db.add(student)
     await db.commit()
     await db.refresh(student)
-    return StudentEnrollResponse(**StudentResponse.model_validate(student).model_dump(), provisioning_uri=provisioning_uri)
+
+    base = await _enrich_student(student, db)
+    return StudentEnrollResponse(**base.model_dump(), totp_provisioning_uri=provisioning_uri)
 
 
 @router.post("/bulk", response_model=BulkEnrollResponse, status_code=status.HTTP_200_OK)
@@ -152,8 +180,9 @@ async def list_students(
     result = await db.execute(q)
     rows = result.scalars().all()
     next_cursor = rows[-1].id if len(rows) > limit else None
+    items = [await _enrich_student(r, db) for r in rows[:limit]]
     return StudentListResponse(
-        items=[StudentResponse.model_validate(r) for r in rows[:limit]],
+        items=items,
         next_cursor=next_cursor,
     )
 
@@ -164,7 +193,7 @@ async def get_student(student_id: int, db: DbDep, _admin: AdminDep):
     student = result.scalar_one_or_none()
     if not student:
         raise HTTPException(status_code=404, detail="Student not found")
-    return StudentResponse.model_validate(student)
+    return await _enrich_student(student, db)
 
 
 @router.patch("/{student_id}", response_model=StudentResponse)
@@ -175,9 +204,20 @@ async def update_student(student_id: int, body: StudentUpdate, db: DbDep, _admin
         raise HTTPException(status_code=404, detail="Student not found")
     for field, value in body.model_dump(exclude_none=True).items():
         setattr(student, field, value)
+
+    if body.active is False:
+        await db.execute(
+            sa_update(UnlockEligibility)
+            .where(
+                UnlockEligibility.student_id == student_id,
+                UnlockEligibility.consumed_at.is_(None),
+            )
+            .values(consumed_at=datetime.now(timezone.utc))
+        )
+
     await db.commit()
     await db.refresh(student)
-    return StudentResponse.model_validate(student)
+    return await _enrich_student(student, db)
 
 
 @router.delete("/{student_id}", status_code=status.HTTP_204_NO_CONTENT)
@@ -201,5 +241,5 @@ async def reset_totp(student_id: int, db: DbDep, _admin: AdminDep):
     await db.commit()
     return StudentResetTotpResponse(
         member_id=student.member_id,
-        provisioning_uri=get_provisioning_uri(secret, student.member_id),
+        totp_provisioning_uri=get_provisioning_uri(secret, student.member_id),
     )

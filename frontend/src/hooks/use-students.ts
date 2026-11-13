@@ -19,6 +19,8 @@ export function useStudents() {
   const [data, setData] = useState<StudentListResponse | null>(null)
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState<APIError | null>(null)
+  const [hasMore, setHasMore] = useState(false)
+  const [nextCursor, setNextCursor] = useState<number | null>(null)
 
   const fetch = useCallback(async () => {
     setIsLoading(true)
@@ -26,6 +28,8 @@ export function useStudents() {
     try {
       const result = await studentsApi.list(getToken)
       setData(result)
+      setNextCursor(result.next_cursor)
+      setHasMore(result.next_cursor !== null)
     } catch (e) {
       setError(e as APIError)
     } finally {
@@ -36,6 +40,21 @@ export function useStudents() {
   useEffect(() => {
     fetch()
   }, [fetch])
+
+  const loadMore = async () => {
+    if (!nextCursor) return
+    try {
+      const result = await studentsApi.list(getToken, nextCursor)
+      setData((prev) => prev ? {
+        items: [...prev.items, ...result.items],
+        next_cursor: result.next_cursor
+      } : result)
+      setNextCursor(result.next_cursor)
+      setHasMore(result.next_cursor !== null)
+    } catch (e) {
+      setError(e as APIError)
+    }
+  }
 
   const createStudent = async (body: StudentCreate): Promise<StudentEnrollResponse> => {
     const result = await studentsApi.create(getToken, body)
@@ -64,20 +83,5 @@ export function useStudents() {
     return result
   }
 
-  const deleteStudent = async (id: number) => {
-    await studentsApi.delete(getToken, id)
-    toast.success("Student deleted")
-    await fetch()
-  }
-
-  const bulkEnroll = async (students: BulkEnrollRow[]): Promise<BulkEnrollResponse> => {
-    const result = await studentsApi.bulkEnroll(getToken, students)
-    if (result.enrolled_count > 0) {
-      toast.success(`Enrolled ${result.enrolled_count} student${result.enrolled_count === 1 ? "" : "s"}`)
-      await fetch()
-    }
-    return result
-  }
-
-  return { data, isLoading, error, createStudent, updateStudent, toggleActive, resetTotp, deleteStudent, bulkEnroll, refetch: fetch }
+  return { data, isLoading, error, hasMore, loadMore, createStudent, updateStudent, toggleActive, resetTotp, refetch: fetch }
 }

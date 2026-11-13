@@ -10,6 +10,8 @@ class ValidateCodeRequest(BaseModel):
 class ValidateCodeResponse(BaseModel):
     valid: bool
     reason: str
+    member_id: str | None = None
+    credit_balance: int | None = None
 
 
 class DeviceEventRequest(BaseModel):

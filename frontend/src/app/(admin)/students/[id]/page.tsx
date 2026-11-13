@@ -152,8 +152,8 @@ export default function StudentDetailPage(props: PageProps<"/students/[id]">) {
         onOpenChange={setEditOpen}
         mode="edit"
         student={student}
-        onSubmit={async (data) => {
-          await studentsApi.update(getToken, Number(id), data)
+        onSubmit={async ({ member_id: _mid, ...rest }) => {
+          await studentsApi.update(getToken, Number(id), rest)
           await refetch()
           return {}
         }}
