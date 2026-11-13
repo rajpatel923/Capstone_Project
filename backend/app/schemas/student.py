@@ -37,3 +37,28 @@ class StudentResetTotpResponse(BaseModel):
 class StudentListResponse(BaseModel):
     items: list[StudentResponse]
     next_cursor: int | None
+
+
+class BulkEnrollRow(BaseModel):
+    full_name: str
+    email: EmailStr
+
+
+class BulkEnrollRequest(BaseModel):
+    students: list[BulkEnrollRow]
+
+
+class BulkEnrollRowResult(BaseModel):
+    full_name: str
+    email: str
+    status: str  # "enrolled" | "skipped" | "error"
+    reason: str | None
+    member_id: str | None
+    email_sent: bool
+
+
+class BulkEnrollResponse(BaseModel):
+    enrolled_count: int
+    skipped_count: int
+    results: list[BulkEnrollRowResult]
+    email_enabled: bool

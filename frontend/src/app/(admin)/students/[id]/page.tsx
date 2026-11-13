@@ -7,6 +7,14 @@ import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Skeleton } from "@/components/ui/skeleton"
+import {
+  Dialog,
+  DialogContent,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog"
+import { QRCodeSVG } from "qrcode.react"
 import { LedgerSheet } from "@/components/dashboard/ledger-sheet"
 import { StudentForm } from "@/components/dashboard/student-form"
 import { useStudent } from "@/hooks/use-student"
@@ -151,15 +159,40 @@ export default function StudentDetailPage(props: PageProps<"/students/[id]">) {
         }}
       />
 
-      {/* QR after TOTP reset */}
-      {qrResult && (
-        <StudentForm
-          open={true}
-          onOpenChange={(v) => { if (!v) setQrResult(null) }}
-          mode="create"
-          onSubmit={async () => qrResult}
-        />
-      )}
+      {/* QR dialog after TOTP reset */}
+      <Dialog open={!!qrResult} onOpenChange={(v) => { if (!v) setQrResult(null) }}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>New TOTP QR Code</DialogTitle>
+          </DialogHeader>
+          <div className="flex flex-col items-center gap-4 py-4">
+            <p className="text-center text-sm text-muted-foreground">
+              Have the student scan this QR code with their authenticator app.
+              This code is shown once and cannot be retrieved again.
+            </p>
+            {qrResult?.provisioning_uri && (
+              <div className="rounded-lg border bg-white p-4">
+                <QRCodeSVG value={qrResult.provisioning_uri} size={200} />
+              </div>
+            )}
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => {
+                if (qrResult?.provisioning_uri) {
+                  navigator.clipboard.writeText(qrResult.provisioning_uri)
+                  toast.success("URI copied to clipboard")
+                }
+              }}
+            >
+              Copy URI
+            </Button>
+          </div>
+          <DialogFooter>
+            <Button onClick={() => setQrResult(null)}>Done</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   )
 }

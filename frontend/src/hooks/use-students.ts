@@ -9,6 +9,8 @@ import type {
   StudentCreate,
   StudentUpdate,
   StudentEnrollResponse,
+  BulkEnrollRow,
+  BulkEnrollResponse,
 } from "@/types/api"
 import { APIError } from "@/lib/api/client"
 
@@ -62,5 +64,20 @@ export function useStudents() {
     return result
   }
 
-  return { data, isLoading, error, createStudent, updateStudent, toggleActive, resetTotp, refetch: fetch }
+  const deleteStudent = async (id: number) => {
+    await studentsApi.delete(getToken, id)
+    toast.success("Student deleted")
+    await fetch()
+  }
+
+  const bulkEnroll = async (students: BulkEnrollRow[]): Promise<BulkEnrollResponse> => {
+    const result = await studentsApi.bulkEnroll(getToken, students)
+    if (result.enrolled_count > 0) {
+      toast.success(`Enrolled ${result.enrolled_count} student${result.enrolled_count === 1 ? "" : "s"}`)
+      await fetch()
+    }
+    return result
+  }
+
+  return { data, isLoading, error, createStudent, updateStudent, toggleActive, resetTotp, deleteStudent, bulkEnroll, refetch: fetch }
 }

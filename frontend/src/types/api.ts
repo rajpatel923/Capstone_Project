@@ -98,3 +98,24 @@ export type RedemptionCreate = {
   student_id: number
   item_id: number
 }
+
+export type BulkEnrollRow = {
+  full_name: string
+  email: string
+}
+
+export type BulkEnrollRowResult = {
+  full_name: string
+  email: string
+  status: "enrolled" | "skipped" | "error"
+  reason: string | null
+  member_id: string | null
+  email_sent: boolean
+}
+
+export type BulkEnrollResponse = {
+  enrolled_count: number
+  skipped_count: number
+  results: BulkEnrollRowResult[]
+  email_enabled: boolean
+}
