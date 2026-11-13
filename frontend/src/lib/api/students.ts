@@ -6,6 +6,8 @@ import type {
   StudentCreate,
   StudentUpdate,
   LedgerResponse,
+  BulkEnrollRow,
+  BulkEnrollResponse,
 } from "@/types/api"
 
 export const studentsApi = {
@@ -41,4 +43,13 @@ export const studentsApi = {
 
   getLedger: (getToken: () => Promise<string | null>, id: number) =>
     apiFetch<LedgerResponse>(`/students/${id}/ledger`, getToken),
+
+  bulkEnroll: (getToken: () => Promise<string | null>, students: BulkEnrollRow[]) =>
+    apiFetch<BulkEnrollResponse>("/students/bulk", getToken, {
+      method: "POST",
+      body: JSON.stringify({ students }),
+    }),
+
+  delete: (getToken: () => Promise<string | null>, id: number) =>
+    apiFetch<void>(`/students/${id}`, getToken, { method: "DELETE" }),
 }

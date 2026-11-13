@@ -3,9 +3,17 @@ import os
 from pydantic import model_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
+# Try root-level .env first so a single file at the repo root works for everything.
+# Falls back to a local .env in case the backend is run in isolation.
+_root_env = str(Path(__file__).parent.parent.parent.parent / ".env")
+
 
 class Settings(BaseSettings):
-    model_config = SettingsConfigDict(env_file=".env", extra="ignore")
+    model_config = SettingsConfigDict(
+        env_file=[_root_env, ".env"],
+        env_file_encoding="utf-8",
+        extra="ignore",
+    )
 
     database_url: str = "postgresql+asyncpg://postgres:postgres@localhost:5432/fridge_dev"
     clerk_secret_key: str = ""

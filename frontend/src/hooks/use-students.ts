@@ -9,6 +9,8 @@ import type {
   StudentCreate,
   StudentUpdate,
   StudentEnrollResponse,
+  BulkEnrollRow,
+  BulkEnrollResponse,
 } from "@/types/api"
 import { APIError } from "@/lib/api/client"
 

@@ -1,10 +1,11 @@
 "use client"
 
 import { useState } from "react"
-import { Plus } from "lucide-react"
+import { Plus, Upload } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { StudentTable } from "@/components/dashboard/student-table"
 import { StudentForm } from "@/components/dashboard/student-form"
+import { BulkUploadDialog } from "@/components/dashboard/bulk-upload-dialog"
 import { useStudents } from "@/hooks/use-students"
 import { toast } from "sonner"
 import type { StudentResponse } from "@/types/api"
@@ -12,6 +13,7 @@ import type { StudentResponse } from "@/types/api"
 export default function StudentsPage() {
   const { data, isLoading, error, hasMore, loadMore, createStudent, updateStudent, toggleActive, resetTotp } = useStudents()
   const [formOpen, setFormOpen] = useState(false)
+  const [bulkOpen, setBulkOpen] = useState(false)
   const [editStudent, setEditStudent] = useState<StudentResponse | undefined>()
 
   const handleEdit = (student: StudentResponse) => {
@@ -47,10 +49,16 @@ export default function StudentsPage() {
             {data?.items.length ?? 0} students enrolled
           </p>
         </div>
-        <Button onClick={() => { setEditStudent(undefined); setFormOpen(true) }}>
-          <Plus className="mr-2 size-4" />
-          New Student
-        </Button>
+        <div className="flex items-center gap-2">
+          <Button variant="outline" onClick={() => setBulkOpen(true)}>
+            <Upload className="mr-2 size-4" />
+            Import CSV
+          </Button>
+          <Button onClick={() => { setEditStudent(undefined); setFormOpen(true) }}>
+            <Plus className="mr-2 size-4" />
+            New Student
+          </Button>
+        </div>
       </div>
 
       {error && (
@@ -66,6 +74,7 @@ export default function StudentsPage() {
           onEdit={handleEdit}
           onToggleActive={(s) => toggleActive(s.id, !s.active)}
           onResetTotp={handleResetTotp}
+          onDelete={(s) => deleteStudent(s.id)}
         />
       </div>
 
@@ -88,6 +97,12 @@ export default function StudentsPage() {
             ? updateStudent(editStudent.id, rest).then(() => ({}))
             : createStudent({ member_id: _mid, ...rest })
         }
+      />
+
+      <BulkUploadDialog
+        open={bulkOpen}
+        onOpenChange={setBulkOpen}
+        onBulkEnroll={bulkEnroll}
       />
 
       {/* QR display after TOTP reset */}
