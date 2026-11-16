@@ -1,3 +1,4 @@
+import random
 from datetime import datetime, timezone
 
 from fastapi import APIRouter, HTTPException, Query, status
@@ -27,6 +28,15 @@ from app.schemas.student import (
 from app.services.email import send_enrollment_email
 
 router = APIRouter(prefix="/students", tags=["students"])
+
+
+async def _generate_unique_member_id(db: AsyncSession) -> str:
+    for _ in range(200):
+        candidate = f"{random.randint(0, 9999):04d}"
+        result = await db.execute(select(Student).where(Student.member_id == candidate))
+        if result.scalar_one_or_none() is None:
+            return candidate
+    raise RuntimeError("Could not generate a unique member_id — pool exhausted")
 
 
 async def _enrich_student(student: Student, db: AsyncSession) -> StudentResponse:
@@ -97,6 +107,24 @@ async def bulk_enroll_students(body: BulkEnrollRequest, db: DbDep, _admin: Admin
     """
     results: list[BulkEnrollRowResult] = []
 
+    if not settings.smtp_host:
+        return BulkEnrollResponse(
+            enrolled_count=0,
+            skipped_count=len(body.students),
+            results=[
+                BulkEnrollRowResult(
+                    full_name=row.full_name,
+                    email=row.email,
+                    status="skipped",
+                    reason="SMTP not configured — accounts require email delivery",
+                    member_id=None,
+                    email_sent=False,
+                )
+                for row in body.students
+            ],
+            email_enabled=False,
+        )
+
     for row in body.students:
         existing = await db.execute(select(Student).where(Student.email == row.email))
         if existing.scalar_one_or_none() is not None:
@@ -136,16 +164,26 @@ async def bulk_enroll_students(body: BulkEnrollRequest, db: DbDep, _admin: Admin
             ))
             continue
 
-        email_sent = False
         try:
-            email_sent = await send_enrollment_email(
+            await send_enrollment_email(
                 to_email=row.email,
                 full_name=row.full_name,
                 member_id=member_id,
+                totp_secret=secret,
                 provisioning_uri=provisioning_uri,
             )
-        except Exception:
-            pass
+        except Exception as exc:
+            await db.delete(student)
+            await db.commit()
+            results.append(BulkEnrollRowResult(
+                full_name=row.full_name,
+                email=row.email,
+                status="error",
+                reason=f"Email delivery failed: {exc}",
+                member_id=None,
+                email_sent=False,
+            ))
+            continue
 
         results.append(BulkEnrollRowResult(
             full_name=row.full_name,
@@ -153,7 +191,7 @@ async def bulk_enroll_students(body: BulkEnrollRequest, db: DbDep, _admin: Admin
             status="enrolled",
             reason=None,
             member_id=member_id,
-            email_sent=email_sent,
+            email_sent=True,
         ))
 
     enrolled_count = sum(1 for r in results if r.status == "enrolled")

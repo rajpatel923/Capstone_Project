@@ -23,7 +23,7 @@
 // ============================================================
 #define WIFI_SSID       "Wokwi-GUEST"   // For Wokwi sim; replace for real hardware
 #define WIFI_PASSWORD   ""               // Wokwi-GUEST needs no password
-#define BACKEND_HOST    "https://ripe-trees-try.loca.lt"  // Replace with your prod URL (no trailing slash)
+#define BACKEND_HOST    "https://old-ways-fix.loca.lt"  // Replace with your prod URL (no trailing slash)
 #define DEVICE_ID       1
 #define DEVICE_API_KEY  "ce1a968467d7eca23afa6c36bc44052a87242805b582f3f2b3ba969a1ecae113"
 // ============================================================

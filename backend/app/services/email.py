@@ -1,9 +1,10 @@
+import asyncio
 import base64
 import io
+import smtplib
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
 
-import aiosmtplib
 import qrcode
 
 from app.core.config import settings
@@ -22,6 +23,7 @@ def _generate_qr_base64(provisioning_uri: str) -> str:
 def _build_enrollment_email(
     full_name: str,
     member_id: str,
+    totp_secret: str,
     provisioning_uri: str,
     qr_b64: str,
 ) -> MIMEMultipart:
@@ -29,17 +31,27 @@ def _build_enrollment_email(
     msg["Subject"] = "Welcome to FRZR BURN — Your TOTP Setup"
     msg["From"] = f"{settings.smtp_from_name} <{settings.smtp_from}>"
 
+    range_url = f"{settings.range_site_url}/register?member_id={member_id}"
+
     plain = f"""Welcome to FRZR BURN, {full_name}!
 
-Your Member ID: {member_id}
+Your Member ID : {member_id}
+Your Secret Key: {totp_secret}
 
-To use the smart fridge:
+── Step 1: Set up your authenticator app ─────────────────
 1. Install Google Authenticator or Authy on your phone.
-2. Scan the QR code in the HTML version of this email, or manually add this URI:
-   {provisioning_uri}
-3. At the fridge keypad, enter your 4-digit Member ID followed by the 6-digit code from your app.
+2. Tap "Add account" → "Enter a setup key".
+3. Enter your Member ID as the account name and paste the Secret Key above.
+   Set the type to Time-based and the interval to 60 seconds.
+4. At the fridge keypad, enter your 4-digit Member ID then the 6-digit code.
 
-This QR code is for your eyes only — do not share it.
+You can also scan the QR code in the HTML version of this email.
+
+── Step 2: Join the Cyber Range ──────────────────────────
+Register here (your Member ID is pre-filled):
+{range_url}
+
+Keep your Secret Key private — do not share it.
 """
 
     html = f"""<!DOCTYPE html>
@@ -57,23 +69,35 @@ This QR code is for your eyes only — do not share it.
   <h3>Set up your authenticator app</h3>
   <ol style="line-height:1.8;">
     <li>Install <strong>Google Authenticator</strong> or <strong>Authy</strong> on your phone.</li>
-    <li>Open the app and scan the QR code below:</li>
+    <li>Tap <strong>Add account</strong> → <strong>Enter a setup key</strong>.</li>
+    <li>Use your Member ID as the account name and enter the secret key below.</li>
+    <li>Set type to <strong>Time-based</strong>, interval <strong>60 seconds</strong>.</li>
   </ol>
 
-  <div style="margin:20px 0;text-align:center;">
+  <div style="background:#f4f4f5;border-radius:8px;padding:16px 20px;margin:20px 0;">
+    <p style="margin:0 0 4px;font-size:0.8em;color:#666;text-transform:uppercase;letter-spacing:0.05em;">Your Secret Key</p>
+    <p style="margin:0;font-family:monospace;font-size:1.4em;letter-spacing:0.2em;font-weight:700;word-break:break-all;">{totp_secret}</p>
+    <p style="margin:8px 0 0;font-size:0.8em;color:#666;">Type this exactly into your authenticator app. Keep it private.</p>
+  </div>
+
+  <p style="font-size:0.85em;color:#666;">Or scan the QR code instead:</p>
+  <div style="margin:12px 0 20px;text-align:center;">
     <img src="data:image/png;base64,{qr_b64}"
          alt="TOTP QR Code"
-         width="220" height="220"
+         width="200" height="200"
          style="border:1px solid #e4e4e7;padding:8px;border-radius:8px;background:#fff;" />
   </div>
 
-  <p style="font-size:0.85em;color:#666;background:#f9f9f9;border:1px solid #e4e4e7;border-radius:6px;padding:12px;">
-    <strong>Can&apos;t scan?</strong> Add this URI manually in your authenticator app:<br/>
-    <code style="word-break:break-all;font-size:0.9em;">{provisioning_uri}</code>
-  </p>
+  <h3>Join the Cyber Range</h3>
+  <p>Complete challenges to earn more fridge credits. Your Member ID is pre-filled — just click the link below:</p>
+  <a href="{range_url}"
+     style="display:inline-block;background:#111;color:#fff;padding:10px 20px;border-radius:6px;text-decoration:none;font-weight:600;margin-bottom:8px;">
+    Register on the Cyber Range →
+  </a>
+  <p style="font-size:0.8em;color:#999;margin-top:4px;">Or copy: <code style="font-size:0.9em;">{range_url}</code></p>
 
   <h3>Using the fridge</h3>
-  <p>At the keypad: type your <strong>4-digit Member ID</strong>, then the <strong>6-digit code</strong> shown in your authenticator app. The code refreshes every 30 seconds.</p>
+  <p>At the keypad: type your <strong>4-digit Member ID</strong>, then the <strong>6-digit code</strong> shown in your authenticator app. The code refreshes every 60 seconds.</p>
 
   <hr style="margin:28px 0;border:none;border-top:1px solid #e4e4e7;" />
   <p style="font-size:0.8em;color:#999;">Do not share your QR code or Member ID with others. Contact your professor to reset your TOTP if needed.</p>
@@ -89,6 +113,7 @@ async def send_enrollment_email(
     to_email: str,
     full_name: str,
     member_id: str,
+    totp_secret: str,
     provisioning_uri: str,
 ) -> bool:
     """Send TOTP enrollment email. Returns False if SMTP not configured. Raises on SMTP errors."""
@@ -96,15 +121,16 @@ async def send_enrollment_email(
         return False
 
     qr_b64 = _generate_qr_base64(provisioning_uri)
-    msg = _build_enrollment_email(full_name, member_id, provisioning_uri, qr_b64)
+    msg = _build_enrollment_email(full_name, member_id, totp_secret, provisioning_uri, qr_b64)
     msg["To"] = to_email
 
-    await aiosmtplib.send(
-        msg,
-        hostname=settings.smtp_host,
-        port=settings.smtp_port,
-        username=settings.smtp_username or None,
-        password=settings.smtp_password or None,
-        start_tls=settings.smtp_starttls,
-    )
+    def _send() -> None:
+        with smtplib.SMTP(settings.smtp_host, settings.smtp_port) as server:
+            if settings.smtp_starttls:
+                server.starttls()
+            if settings.smtp_username:
+                server.login(settings.smtp_username, settings.smtp_password)
+            server.sendmail(msg["From"], [to_email], msg.as_string())
+
+    await asyncio.to_thread(_send)
     return True

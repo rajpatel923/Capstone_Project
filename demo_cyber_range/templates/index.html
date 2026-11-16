@@ -1,0 +1,67 @@
+{% extends "base.html" %}
+{% block title %}Home{% endblock %}
+{% block content %}
+<div class="row justify-content-center mt-5">
+  <div class="col-md-7 text-center">
+    <div class="mb-3" style="font-size:3.5rem;">⚡</div>
+    <h1 class="fw-bold mb-2" style="letter-spacing:-.02em;">RANGE // Cyber Demo</h1>
+    <p class="text-secondary mb-5">
+      A simulated cyber range for testing the FRZR BURN credit system.<br>
+      Complete challenges → capture flags → earn fridge credits.
+    </p>
+
+    <div class="card text-start mb-5">
+      <div class="card-body p-4">
+        <p class="terminal mb-3">$ how_it_works.sh</p>
+        <div class="row g-3">
+          <div class="col-md-3 text-center">
+            <div style="font-size:1.8rem">🏷️</div>
+            <div class="small fw-semibold mt-1">Register</div>
+            <div class="text-secondary" style="font-size:.8rem">Link your FRZR BURN Member ID</div>
+          </div>
+          <div class="col-md-3 text-center">
+            <div style="font-size:1.8rem">🧩</div>
+            <div class="small fw-semibold mt-1">Solve</div>
+            <div class="text-secondary" style="font-size:.8rem">Complete challenges & submit flags</div>
+          </div>
+          <div class="col-md-3 text-center">
+            <div style="font-size:1.8rem">📡</div>
+            <div class="small fw-semibold mt-1">Webhook</div>
+            <div class="text-secondary" style="font-size:.8rem">Points fire to FRZR BURN automatically</div>
+          </div>
+          <div class="col-md-3 text-center">
+            <div style="font-size:1.8rem">🧊</div>
+            <div class="small fw-semibold mt-1">Fridge</div>
+            <div class="text-secondary" style="font-size:.8rem">Use credits to unlock the smart fridge</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="card text-start mb-4">
+      <div class="card-body p-4">
+        <p class="terminal mb-2">$ webhook_format.json</p>
+        <pre class="mb-0" style="color:#8b949e;font-size:.8rem">{
+  "range_challenge_id": "web-01",
+  "title":             "Robots Exposed",
+  "points":            20,
+  "student_member_id": "0636"
+}</pre>
+        <p class="text-secondary mt-2 mb-0" style="font-size:.8rem">
+          Signed with <code>HMAC-SHA256</code> via <code>X-Range-Signature</code> header.
+          10 points = 1 FRZR BURN credit.
+        </p>
+      </div>
+    </div>
+
+    {% if not session.username %}
+    <div class="d-flex gap-3 justify-content-center">
+      <a href="{{ url_for('register') }}" class="btn btn-primary px-4">Get Started →</a>
+      <a href="{{ url_for('login') }}" class="btn btn-outline-secondary px-4">Login</a>
+    </div>
+    {% else %}
+    <a href="{{ url_for('challenges') }}" class="btn btn-primary px-4">View Challenges →</a>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}

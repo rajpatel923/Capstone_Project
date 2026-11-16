@@ -83,5 +83,18 @@ export function useStudents() {
     return result
   }
 
-  return { data, isLoading, error, hasMore, loadMore, createStudent, updateStudent, toggleActive, resetTotp, refetch: fetch }
+  const deleteStudent = async (id: number) => {
+    await studentsApi.delete(getToken, id)
+    toast.success("Student deleted")
+    await fetch()
+  }
+
+  const bulkEnroll = async (students: BulkEnrollRow[]): Promise<BulkEnrollResponse> => {
+    const result = await studentsApi.bulkEnroll(getToken, students)
+    toast.success(`Enrolled ${result.enrolled_count} student(s)`)
+    await fetch()
+    return result
+  }
+
+  return { data, isLoading, error, hasMore, loadMore, createStudent, updateStudent, toggleActive, resetTotp, deleteStudent, bulkEnroll, refetch: fetch }
 }

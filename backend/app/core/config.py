@@ -1,4 +1,5 @@
 import os
+from pathlib import Path
 
 from pydantic import model_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
@@ -24,6 +25,16 @@ class Settings(BaseSettings):
     rate_limit_per_minute: int = 10
     cors_origins: list[str] = ["http://localhost:3000"]
     credit_conversion_rate: int = 10  # points // rate = credits
+
+    smtp_host: str = ""
+    smtp_port: int = 587
+    smtp_username: str = ""
+    smtp_password: str = ""
+    smtp_starttls: bool = True
+    smtp_from: str = ""
+    smtp_from_name: str = "FRZR BURN"
+
+    range_site_url: str = "http://localhost:5050"
 
     @model_validator(mode="after")
     def _check_required_secrets(self) -> "Settings":

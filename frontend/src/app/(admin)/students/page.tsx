@@ -11,7 +11,7 @@ import { toast } from "sonner"
 import type { StudentResponse } from "@/types/api"
 
 export default function StudentsPage() {
-  const { data, isLoading, error, hasMore, loadMore, createStudent, updateStudent, toggleActive, resetTotp } = useStudents()
+  const { data, isLoading, error, hasMore, loadMore, createStudent, updateStudent, toggleActive, resetTotp, deleteStudent, bulkEnroll } = useStudents()
   const [formOpen, setFormOpen] = useState(false)
   const [bulkOpen, setBulkOpen] = useState(false)
   const [editStudent, setEditStudent] = useState<StudentResponse | undefined>()

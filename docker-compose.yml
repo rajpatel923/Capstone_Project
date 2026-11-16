@@ -15,11 +15,20 @@ services:
       timeout: 5s
       retries: 5
 
+  mailhog:
+    image: mailhog/mailhog
+    platform: linux/amd64
+    ports:
+      - "1025:1025"
+      - "8025:8025"
+
   api:
     build: ./backend
     depends_on:
       db:
         condition: service_healthy
+      mailhog:
+        condition: service_started
     environment:
       DATABASE_URL: postgresql+asyncpg://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD:-postgres}@db:5432/${POSTGRES_DB:-fridge_dev}
       CLERK_SECRET_KEY: ${CLERK_SECRET_KEY}
@@ -28,11 +37,30 @@ services:
       TOTP_ENCRYPTION_KEY: ${TOTP_ENCRYPTION_KEY}
       RANGE_WEBHOOK_SECRET: ${RANGE_WEBHOOK_SECRET}
       CORS_ORIGINS: '["http://localhost:3000"]'
+      RANGE_SITE_URL: ${RANGE_SITE_URL:-http://localhost:5050}
+      SMTP_HOST: ${SMTP_HOST:-mailhog}
+      SMTP_PORT: ${SMTP_PORT:-1025}
+      SMTP_USERNAME: ${SMTP_USERNAME:-}
+      SMTP_PASSWORD: ${SMTP_PASSWORD:-}
+      SMTP_STARTTLS: ${SMTP_STARTTLS:-false}
+      SMTP_FROM: ${SMTP_FROM:-noreply@frzrburn.local}
+      SMTP_FROM_NAME: ${SMTP_FROM_NAME:-FRZR BURN}
     ports:
       - "8000:8000"
     command: >
       sh -c "uv run alembic upgrade head &&
              uv run uvicorn app.main:app --host 0.0.0.0 --port 8000"
+
+  range:
+    build: ./demo_cyber_range
+    depends_on:
+      - api
+    environment:
+      SECRET_KEY: ${RANGE_SECRET_KEY:-dev-secret-change-me}
+      FRZR_BURN_API_URL: http://api:8000
+      RANGE_WEBHOOK_SECRET: ${RANGE_WEBHOOK_SECRET}
+    ports:
+      - "5050:5050"
 
   web:
     build:

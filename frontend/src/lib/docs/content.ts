@@ -22,7 +22,7 @@ export const docSections: DocSection[] = [
     blocks: [
       {
         type: "paragraph",
-        text: "FRZR BURN is a CTF-gated smart mini-fridge reward system for the Islander Cyber Society. Students earn physical access to the fridge — and credits redeemable for items inside it — by solving cybersecurity challenges on the CTF range.",
+        text: "FRZR BURN is a CTF-gated smart mini-fridge reward system. Students earn fridge credits by completing cybersecurity challenges on a cyber range. Credits can be redeemed for items inside the fridge via a keypad using their Member ID and a TOTP code from their authenticator app.",
       },
       {
         type: "heading",
@@ -31,8 +31,8 @@ export const docSections: DocSection[] = [
       {
         type: "list",
         items: [
-          "CTF Range — students solve challenges, the range fires a webhook to the backend",
-          "Backend API — validates codes, manages eligibility windows, tracks credits",
+          "Cyber Range — students solve challenges, the range fires a signed webhook to the backend",
+          "Backend API — validates webhooks, manages eligibility windows, tracks credits",
           "ESP32 Fridge — a keypad-and-servo lock that calls the backend to verify codes",
         ],
       },
@@ -43,17 +43,18 @@ export const docSections: DocSection[] = [
       {
         type: "list",
         items: [
-          "Enroll students and provision their TOTP authenticator",
+          "Enroll students individually or via CSV bulk import",
+          "Automatically email students their Member ID, TOTP secret key, and range registration link",
           "Monitor device heartbeat and firmware versions",
           "Review every unlock attempt in the audit log",
           "Manage fridge inventory and process credit redemptions",
-          "Deactivate or reset credentials for any student",
+          "Deactivate, edit, reset TOTP, or permanently delete any student",
         ],
       },
       {
         type: "callout",
         variant: "info",
-        text: "Students never log in to this dashboard. Their only interaction with the system is at the fridge keypad and in their authenticator app.",
+        text: "Students never log in to this dashboard. Their only interaction with the system is at the fridge keypad, in their authenticator app, and on the cyber range website.",
       },
     ],
   },
@@ -68,11 +69,21 @@ export const docSections: DocSection[] = [
       },
       {
         type: "heading",
-        text: "Dashboard overview",
+        text: "Setting the admin role",
       },
       {
-        type: "paragraph",
-        text: "The Overview page shows four key metrics at a glance:",
+        type: "steps",
+        items: [
+          "Sign up at the dashboard URL with your email",
+          "Open the Clerk Dashboard at dashboard.clerk.com",
+          "Find your user → Public Metadata",
+          'Set: { "role": "admin" }',
+          "Refresh the FRZR BURN dashboard — you now have full access",
+        ],
+      },
+      {
+        type: "heading",
+        text: "Dashboard overview",
       },
       {
         type: "table",
@@ -85,10 +96,6 @@ export const docSections: DocSection[] = [
         ],
       },
       {
-        type: "paragraph",
-        text: "Below the stats, the most recent unlock attempts are listed. Use the left sidebar to navigate to full management pages for Students, Devices, Events, and Items.",
-      },
-      {
         type: "callout",
         variant: "tip",
         text: "Bookmark the dashboard URL and keep it open during CTF events — the device status and recent events update automatically.",
@@ -98,44 +105,83 @@ export const docSections: DocSection[] = [
   {
     id: "enrolling-students",
     title: "Enrolling Students",
-    description: "Adding a new student and setting up their TOTP",
+    description: "Adding students individually or via CSV bulk import",
     blocks: [
       {
         type: "paragraph",
-        text: "Each student needs a unique 4-digit member ID and a TOTP secret provisioned to their authenticator app. This is a one-time setup — the TOTP secret is shown only once at enrollment.",
+        text: "Each student gets a unique auto-generated 4-digit Member ID and a TOTP secret sent to their email. There are two ways to enroll: individually for a single student, or via CSV for a whole class.",
+      },
+      {
+        type: "callout",
+        variant: "warning",
+        text: "Student accounts are only created when the enrollment email can be delivered. SMTP must be configured before enrolling. If SMTP is not set up, all enrollments will be rejected.",
       },
       {
         type: "heading",
-        text: "Step-by-step enrollment",
+        text: "Single enrollment",
       },
       {
         type: "steps",
         items: [
           "Navigate to Students in the sidebar",
           "Click New Student in the top-right",
-          "Enter the student's 4-digit Member ID (use their ICS membership number if one exists — it must be unique across all students)",
-          "Enter their Full Name and Email address",
-          "Click Enroll — the form submits and a QR code appears",
-          "Have the student immediately scan the QR code with Google Authenticator, Authy, or any TOTP app",
-          "Click Done — the QR code cannot be retrieved again after this dialog closes",
+          "Enter the student's Full Name and Email address",
+          "Click Enroll — the account is created and the enrollment email is sent automatically",
+          "The admin sees a one-time QR code — this is a backup only. The student already has everything they need in their email.",
+        ],
+      },
+      {
+        type: "heading",
+        text: "Bulk import via CSV",
+      },
+      {
+        type: "steps",
+        items: [
+          "Navigate to Students → Import CSV",
+          "Drop your CSV file or click Browse",
+          "Preview the detected students — review for any warnings",
+          "Click Import — each student is enrolled and emailed in one go",
+          "The results table shows enrolled / skipped / error per row",
+        ],
+      },
+      {
+        type: "heading",
+        text: "Supported CSV formats",
+      },
+      {
+        type: "table",
+        headers: ["Format", "Required columns"],
+        rows: [
+          ["Generic", "Name, Email"],
+          ["Canvas People export", "Name, Email, Section"],
+          ["Canvas Gradebook export", "Student, Email Address, SIS User ID"],
+        ],
+      },
+      {
+        type: "code",
+        label: "Generic CSV example",
+        lines: [
+          "Name,Email",
+          "Jane Doe,jane@university.edu",
+          "John Smith,john@university.edu",
         ],
       },
       {
         type: "callout",
-        variant: "warning",
-        text: "The TOTP provisioning QR code is shown exactly once. If the student misses it, you must reset their TOTP secret via the student detail page, which generates a new QR code.",
+        variant: "tip",
+        text: "Canvas People and Gradebook exports work directly — just download from Canvas and upload here without any editing.",
       },
       {
         type: "heading",
-        text: "Member ID rules",
+        text: "What the enrollment email contains",
       },
       {
         type: "list",
         items: [
-          "Must be exactly 4 digits (0000–9999)",
-          "Must be unique — the system rejects duplicates",
-          "Cannot be changed after enrollment (it is baked into the student's keypad code)",
-          "If the student has an existing ICS membership number, use that for consistency",
+          "The student's 4-digit Member ID",
+          "Their TOTP secret key (to enter manually in their authenticator app)",
+          "A QR code (alternative to the secret key)",
+          "A direct link to register on the Cyber Range — Member ID is pre-filled in the form",
         ],
       },
     ],
@@ -143,11 +189,11 @@ export const docSections: DocSection[] = [
   {
     id: "totp-codes",
     title: "TOTP Codes & the Keypad",
-    description: "How students unlock the fridge",
+    description: "How students set up their authenticator and unlock the fridge",
     blocks: [
       {
         type: "paragraph",
-        text: "The fridge keypad accepts a 10-digit code: the student's 4-digit member ID followed immediately by their current 6-digit TOTP code from their authenticator app. No spaces or separators.",
+        text: "The fridge keypad accepts a 10-digit code: the student's 4-digit Member ID followed immediately by their current 6-digit TOTP code from their authenticator app. No spaces or separators.",
       },
       {
         type: "heading",
@@ -162,6 +208,26 @@ export const docSections: DocSection[] = [
           "             ──────────",
           "Full code:  1234567890   ← type this, then press #",
         ],
+      },
+      {
+        type: "heading",
+        text: "Student setup instructions",
+      },
+      {
+        type: "steps",
+        items: [
+          "Install Google Authenticator or Authy on your phone",
+          "Tap Add account → Enter a setup key",
+          "Use your Member ID as the account name",
+          "Paste the Secret Key from your enrollment email",
+          "Set type to Time-based, interval 60 seconds",
+          "Tap Add — a 6-digit code will appear, refreshing every 60 seconds",
+        ],
+      },
+      {
+        type: "callout",
+        variant: "warning",
+        text: "The interval must be set to 60 seconds, not the default 30. Codes generated at 30 seconds will always be rejected at the fridge.",
       },
       {
         type: "heading",
@@ -183,27 +249,27 @@ export const docSections: DocSection[] = [
       {
         type: "list",
         items: [
-          "TOTP codes rotate every 30 seconds (standard RFC 6238)",
-          "The backend accepts codes from the current window plus one window on each side (±30s) to tolerate clock drift",
-          "If the code is rejected with 'Wrong TOTP code', the student should wait for the next code cycle in their app",
+          "TOTP codes rotate every 60 seconds",
+          "The backend accepts codes from the current window plus one window on each side to tolerate clock drift",
+          "If the code is rejected with 'Wrong TOTP code', wait for the next code cycle in the app",
           "If the code is rejected with 'No unlock earned', the student has no active eligibility — they need to solve a CTF challenge first",
         ],
       },
       {
         type: "callout",
         variant: "info",
-        text: "The fridge OLED display shows user-friendly error messages. 'ID not found' means the member ID was not recognised. 'Account inactive' means the student has been deactivated in the dashboard.",
+        text: "The fridge OLED display shows user-friendly error messages. 'ID not found' means the Member ID was not recognised. 'Account inactive' means the student has been deactivated in the dashboard.",
       },
     ],
   },
   {
     id: "ctf-integration",
-    title: "CTF Integration",
-    description: "How challenge completions grant fridge access",
+    title: "CTF Range Integration",
+    description: "How challenge completions grant fridge credits and access",
     blocks: [
       {
         type: "paragraph",
-        text: "FRZR BURN connects to an external CTF range via a webhook. When a student captures a flag, the range sends a signed event to the backend, which grants an unlock eligibility window and awards credits.",
+        text: "FRZR BURN connects to the cyber range via a webhook. When a student captures a flag, the range sends a signed event to the backend, which grants an unlock eligibility window and awards credits.",
       },
       {
         type: "heading",
@@ -212,12 +278,52 @@ export const docSections: DocSection[] = [
       {
         type: "steps",
         items: [
-          "Student solves a challenge on the CTF range",
-          "The range sends a POST request to /events/flag-captured with the student's member ID, challenge details, and point value",
+          "Student solves a challenge on the cyber range",
+          "The range sends a POST request to /events/flag-captured with the student's Member ID, challenge details, and point value",
           "The backend verifies the HMAC-SHA256 signature and finds the matching student",
           "A 1-hour unlock eligibility window is created for that student",
           "Credits are awarded: challenge points ÷ 10 = credits (e.g. a 50-point challenge = 5 credits)",
           "The student now has 1 hour to walk to the fridge and enter their code",
+        ],
+      },
+      {
+        type: "heading",
+        text: "Webhook format",
+      },
+      {
+        type: "code",
+        label: "POST /events/flag-captured",
+        lines: [
+          '// Header',
+          'X-Range-Signature: sha256=<hmac-sha256-hex>',
+          '// or',
+          'Authorization: Bearer <RANGE_WEBHOOK_SECRET>',
+          '',
+          '// Body',
+          '{',
+          '  "range_challenge_id": "web-01",',
+          '  "title":             "SQL Injection 101",',
+          '  "points":            50,',
+          '  "student_member_id": "0636"',
+          '}',
+        ],
+      },
+      {
+        type: "heading",
+        text: "Demo Cyber Range",
+      },
+      {
+        type: "paragraph",
+        text: "A demo range site is included for testing at http://localhost:5050. It has 6 built-in challenges across Web, Crypto, Network, and Recon categories. Students register using the pre-filled link in their enrollment email.",
+      },
+      {
+        type: "steps",
+        items: [
+          "Enroll a student via the dashboard",
+          "Open the MailHog inbox at http://localhost:8025 (dev) or check the student's real inbox",
+          "Click the 'Register on the Cyber Range' button in the email — Member ID is pre-filled",
+          "Log in to the range → solve a challenge → submit the flag",
+          "Return to the dashboard → Students → click the student → verify credits in the ledger",
         ],
       },
       {
@@ -234,56 +340,106 @@ export const docSections: DocSection[] = [
           "Expired windows (older than 1 hour) are automatically ignored",
         ],
       },
+    ],
+  },
+  {
+    id: "email-setup",
+    title: "Email Setup",
+    description: "Configuring SMTP so enrollment emails are delivered",
+    blocks: [
       {
-        type: "callout",
-        variant: "tip",
-        text: "Credits are awarded per flag capture regardless of whether the student visits the fridge. A student who solves challenges but never unlocks the fridge still accumulates credits that can be redeemed later.",
+        type: "paragraph",
+        text: "FRZR BURN requires SMTP to send enrollment emails. Without SMTP configured, student accounts cannot be created. For local development, MailHog captures all outgoing emails so they never reach real inboxes.",
       },
       {
         type: "heading",
-        text: "Credit conversion rate",
+        text: "Local development (MailHog)",
       },
       {
         type: "paragraph",
-        text: "The default rate is 10 points per credit (configurable via the CREDIT_CONVERSION_RATE environment variable on the backend). A 100-point challenge awards 10 credits. Zero-point challenges award no credits but still grant an eligibility window.",
+        text: "MailHog runs automatically with docker compose up. View all captured emails at http://localhost:8025. No configuration is needed — it works out of the box.",
+      },
+      {
+        type: "heading",
+        text: "Production — Brevo (recommended, free)",
+      },
+      {
+        type: "steps",
+        items: [
+          "Sign up at brevo.com (no credit card required — 300 emails/day free)",
+          "Go to SMTP & API → SMTP tab → generate a new SMTP key",
+          "Go to Senders & IPs → verify your sender email address",
+          "Update .env with the values below",
+          "Restart: docker compose down && docker compose up",
+        ],
+      },
+      {
+        type: "code",
+        label: ".env — Brevo settings",
+        lines: [
+          "SMTP_HOST=smtp-relay.brevo.com",
+          "SMTP_PORT=587",
+          "SMTP_USERNAME=your-brevo-login@example.com",
+          "SMTP_PASSWORD=your-brevo-smtp-key",
+          "SMTP_STARTTLS=true",
+          "SMTP_FROM=your-verified-sender@example.com",
+          "SMTP_FROM_NAME=FRZR BURN",
+        ],
+      },
+      {
+        type: "heading",
+        text: "Production — Gmail",
+      },
+      {
+        type: "steps",
+        items: [
+          "Enable 2-Step Verification on your Google account",
+          "Go to Google Account → Security → App Passwords → generate one for Mail",
+          "Update .env with the values below",
+        ],
+      },
+      {
+        type: "code",
+        label: ".env — Gmail settings",
+        lines: [
+          "SMTP_HOST=smtp.gmail.com",
+          "SMTP_PORT=587",
+          "SMTP_USERNAME=yourname@gmail.com",
+          "SMTP_PASSWORD=xxxx xxxx xxxx xxxx",
+          "SMTP_STARTTLS=true",
+          "SMTP_FROM=yourname@gmail.com",
+          "SMTP_FROM_NAME=FRZR BURN",
+        ],
+      },
+      {
+        type: "callout",
+        variant: "info",
+        text: "Gmail allows up to 500 emails/day. Brevo allows 300/day on the free plan. For a typical class of 30 students, either option is more than sufficient.",
       },
     ],
   },
   {
     id: "managing-students",
     title: "Managing Students",
-    description: "Editing, deactivating, and resetting TOTP",
+    description: "Editing, deactivating, resetting TOTP, and deleting students",
     blocks: [
       {
         type: "paragraph",
-        text: "The Students page lists all enrolled students with their status and enrollment date. Click any row to open the student detail page.",
+        text: "The Students page lists all enrolled students with their status, Member ID, and credit balance. Click any student to open their detail page.",
       },
       {
         type: "heading",
-        text: "Student detail page",
+        text: "Student detail page actions",
       },
       {
-        type: "list",
-        items: [
-          "Member ID and current credit balance shown at the top",
-          "Credit Ledger tab shows every credit transaction (challenges earned, redemptions spent)",
-          "Edit button: update the student's name or email",
-          "Reset TOTP button: invalidates the current TOTP secret and generates a new QR code (shown once)",
-          "Deactivate / Activate toggle: controls whether the student can use the fridge",
+        type: "table",
+        headers: ["Action", "What it does"],
+        rows: [
+          ["Edit", "Update the student's name or email address"],
+          ["Reset TOTP", "Invalidates the current TOTP secret and shows a new QR code (shown once)"],
+          ["Deactivate / Activate", "Toggles whether the student can use the fridge"],
+          ["Delete", "Permanently removes the student and all associated data"],
         ],
-      },
-      {
-        type: "heading",
-        text: "Deactivating a student",
-      },
-      {
-        type: "paragraph",
-        text: "Deactivating a student via PATCH /students/{id} with active: false immediately invalidates all their unconsumed eligibility windows. They can no longer unlock the fridge even with a valid TOTP code. Credits are preserved and the student can be reactivated at any time.",
-      },
-      {
-        type: "callout",
-        variant: "warning",
-        text: "Deactivation takes effect immediately. If a student is currently at the fridge when you deactivate them, their next code entry will be rejected with 'Account inactive'.",
       },
       {
         type: "heading",
@@ -294,10 +450,36 @@ export const docSections: DocSection[] = [
         items: [
           "Open the student detail page",
           "Click Reset TOTP",
-          "A new QR code appears — have the student scan it immediately",
-          "The old TOTP secret is invalidated as soon as the new one is generated",
-          "The student's member ID and credits are unchanged",
+          "A new QR code and secret key appear — have the student add it to their authenticator app",
+          "The old TOTP secret is invalidated immediately",
+          "Remind the student to delete the old entry from their authenticator app",
         ],
+      },
+      {
+        type: "callout",
+        variant: "warning",
+        text: "After a TOTP reset, the student must set the interval to 60 seconds (not the default 30) when adding the new key to their authenticator app.",
+      },
+      {
+        type: "heading",
+        text: "Deactivating a student",
+      },
+      {
+        type: "paragraph",
+        text: "Deactivation takes effect immediately. All unconsumed eligibility windows are invalidated — the student cannot unlock the fridge even with a valid TOTP code. Credits are preserved and the student can be reactivated at any time.",
+      },
+      {
+        type: "heading",
+        text: "Deleting a student",
+      },
+      {
+        type: "paragraph",
+        text: "Deletion is permanent and removes the student along with all their ledger entries and eligibility windows. A confirmation dialog is shown before the action is taken. This cannot be undone.",
+      },
+      {
+        type: "callout",
+        variant: "warning",
+        text: "Deactivate a student first if you are unsure — it blocks fridge access while keeping all data intact. Only delete when you are certain the record is no longer needed.",
       },
       {
         type: "heading",
@@ -305,7 +487,7 @@ export const docSections: DocSection[] = [
       },
       {
         type: "paragraph",
-        text: "The student list loads 50 students at a time. If there are more, a Load more button appears at the bottom of the table. The count shown in the header may read '50+ enrolled' when additional pages exist.",
+        text: "The student list loads 50 students at a time. If there are more, a Load more button appears at the bottom of the table.",
       },
     ],
   },
@@ -331,30 +513,13 @@ export const docSections: DocSection[] = [
         ],
       },
       {
-        type: "paragraph",
-        text: "The device list auto-refreshes every 30 seconds. A '(last refresh failed)' warning appears in the subtitle if the backend is unreachable during a refresh.",
-      },
-      {
-        type: "heading",
-        text: "Heartbeat behaviour",
-      },
-      {
         type: "list",
         items: [
           "Devices send a heartbeat immediately after connecting to WiFi",
           "After that, heartbeats are sent every 5 minutes",
           "A heartbeat is also sent any time a code validation attempt is made",
-          "If a device goes offline (power cut, WiFi drop), it will appear offline within 60 seconds",
-          "When WiFi reconnects, the device sends an immediate heartbeat",
+          "If a device goes offline, it will appear offline within 60 seconds",
         ],
-      },
-      {
-        type: "heading",
-        text: "Firmware version",
-      },
-      {
-        type: "paragraph",
-        text: "The firmware version column shows the version string reported by the device at last contact. If a device shows a different version from others, it may need to be reflashed. Firmware updates currently require physical access to the device.",
       },
       {
         type: "callout",
@@ -383,21 +548,8 @@ export const docSections: DocSection[] = [
           "Click Add Item",
           "Enter the item name (e.g. 'Gatorade', 'Red Bull', 'Granola Bar')",
           "Set the credit cost — how many credits a student must spend to redeem this item",
-          "Set the initial stock quantity — how many units are currently in the fridge",
+          "Set the initial stock quantity",
           "Click Create",
-        ],
-      },
-      {
-        type: "heading",
-        text: "Stock management",
-      },
-      {
-        type: "list",
-        items: [
-          "Stock decrements automatically when a redemption is processed",
-          "Items with 0 stock are hidden from the redemption form",
-          "To restock an item, you currently need to delete and recreate it (or update stock via the backend directly — a UI for editing stock is a planned improvement)",
-          "Physical fridge refills should be reflected in the system to keep counts accurate",
         ],
       },
       {
@@ -414,7 +566,7 @@ export const docSections: DocSection[] = [
     blocks: [
       {
         type: "paragraph",
-        text: "Redemptions are processed by an admin at the fridge — there is no self-service redemption for students in v1. When a student wants to claim an item, an admin opens the dashboard and processes the transaction.",
+        text: "Redemptions are processed by an admin at the fridge. When a student wants to claim an item, an admin opens the dashboard and processes the transaction.",
       },
       {
         type: "heading",
@@ -425,24 +577,16 @@ export const docSections: DocSection[] = [
         items: [
           "Navigate to Items in the sidebar",
           "Click Process Redemption",
-          "Select the student from the dropdown — their member ID and current credit balance are shown",
+          "Select the student — their Member ID and current credit balance are shown",
           "Select the item — cost and remaining stock are shown",
-          "If the student has insufficient credits, the form shows a warning and the Redeem button is disabled",
-          "Click Redeem — the transaction is recorded, stock decrements, and the success toast shows the student's new balance",
+          "If the student has insufficient credits, the Redeem button is disabled",
+          "Click Redeem — stock decrements and the student's new balance is shown",
         ],
-      },
-      {
-        type: "heading",
-        text: "Credit ledger",
-      },
-      {
-        type: "paragraph",
-        text: "Every redemption is recorded in the student's credit ledger with reason 'redemption'. You can view the full transaction history on the student detail page. The ledger shows both positive entries (flag captures) and negative entries (redemptions).",
       },
       {
         type: "callout",
         variant: "warning",
-        text: "Redemptions cannot be undone through the dashboard. If you process a redemption by mistake, you will need to manually add a correction entry via the backend API or database.",
+        text: "Redemptions cannot be undone through the dashboard. If you process one by mistake, contact your system administrator to correct the ledger directly.",
       },
     ],
   },
@@ -464,40 +608,99 @@ export const docSections: DocSection[] = [
         headers: ["Result", "Meaning"],
         rows: [
           ["granted", "Code was valid, eligibility window consumed, door unlocked"],
-          ["invalid_format", "Code was not exactly 10 digits — student entered too few or too many"],
-          ["unknown_member", "The first 4 digits did not match any enrolled member ID"],
-          ["invalid_totp", "Member ID was found but the 6-digit TOTP was wrong or expired"],
-          ["no_eligibility", "Member ID and TOTP were correct but no active eligibility window exists (student hasn't solved a challenge recently)"],
+          ["invalid_format", "Code was not exactly 10 digits"],
+          ["unknown_member", "The first 4 digits did not match any enrolled Member ID"],
+          ["invalid_totp", "Member ID found but the 6-digit TOTP was wrong or expired"],
+          ["no_eligibility", "Member ID and TOTP correct but no active eligibility window — student hasn't solved a challenge recently"],
           ["member_inactive", "The student account has been deactivated"],
-          ["forced_open", "The door was physically opened while locked — no code was entered"],
-        ],
-      },
-      {
-        type: "heading",
-        text: "Filtering events",
-      },
-      {
-        type: "list",
-        items: [
-          "Use the result filter dropdown to show only a specific outcome",
-          "Filter by 'forced_open' to check for tampering attempts",
-          "Filter by 'no_eligibility' to identify students who are trying but haven't captured any flags",
-          "Filter by 'granted' to see successful unlocks",
-          "Click Load more at the bottom to fetch older events",
+          ["forced_open", "Door was physically opened while locked — no code was entered"],
         ],
       },
       {
         type: "callout",
         variant: "tip",
-        text: "The 'no_eligibility' result is the most common failure mode during a CTF event. If many students are seeing it, check whether the CTF range webhook is configured correctly and sending events to the backend.",
+        text: "The 'no_eligibility' result is the most common failure during a CTF event. If many students see it, check that the cyber range webhook is correctly configured and sending events to the backend.",
       },
       {
         type: "heading",
-        text: "Member ID shown",
+        text: "Common issues",
+      },
+      {
+        type: "table",
+        headers: ["Symptom", "Likely cause"],
+        rows: [
+          ["invalid_totp repeatedly", "Student's authenticator is set to 30s interval instead of 60s"],
+          ["no_eligibility after solving", "Webhook RANGE_WEBHOOK_SECRET mismatch — check both sides match"],
+          ["unknown_member", "Student typed their Member ID wrong — verify it on their detail page"],
+        ],
+      },
+    ],
+  },
+  {
+    id: "troubleshooting",
+    title: "Troubleshooting",
+    description: "Common problems and how to fix them",
+    blocks: [
+      {
+        type: "heading",
+        text: "Bulk import — all rows skipped",
       },
       {
         type: "paragraph",
-        text: "The 'Member ID' column in the event log shows the raw first 4 digits of the submitted code, even for failed attempts. This helps identify typos (e.g. a student entering 5 digits for their member ID instead of 4).",
+        text: "SMTP is not configured. Set SMTP_HOST in .env and restart. Accounts are only created when the enrollment email can be delivered.",
+      },
+      {
+        type: "heading",
+        text: "Webhook returns 401 Unauthorized",
+      },
+      {
+        type: "paragraph",
+        text: "The RANGE_WEBHOOK_SECRET in .env does not match what the cyber range is using. Both must be identical. After changing, restart both services.",
+      },
+      {
+        type: "heading",
+        text: "Webhook returns 404 — Student not found",
+      },
+      {
+        type: "paragraph",
+        text: "The student_member_id in the webhook payload does not match any student in the database. Verify the exact 4-digit Member ID in the student's detail page.",
+      },
+      {
+        type: "heading",
+        text: "TOTP codes rejected at the fridge",
+      },
+      {
+        type: "list",
+        items: [
+          "Student set up their authenticator with 30-second interval — they must re-add the key with 60-second interval",
+          "If TOTP_INTERVAL was recently changed on the server, reset the student's TOTP so they get a new secret provisioned at the correct interval",
+          "Ensure the fridge firmware also uses a 60-second interval",
+        ],
+      },
+      {
+        type: "heading",
+        text: "No space left on device (Docker)",
+      },
+      {
+        type: "code",
+        label: "Free up Docker disk space",
+        lines: [
+          "docker system prune -a --volumes",
+          "docker compose up",
+        ],
+      },
+      {
+        type: "heading",
+        text: "API container exits on startup",
+      },
+      {
+        type: "paragraph",
+        text: "Usually a missing required environment variable. Check that CLERK_SECRET_KEY, TOTP_ENCRYPTION_KEY, and RANGE_WEBHOOK_SECRET are all set in .env.",
+      },
+      {
+        type: "callout",
+        variant: "tip",
+        text: "Run 'docker compose logs api' to see the exact error message from the API container.",
       },
     ],
   },

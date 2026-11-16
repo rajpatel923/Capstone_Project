@@ -31,7 +31,21 @@ export default function StudentDetailPage(props: PageProps<"/students/[id]">) {
 
   const [ledgerOpen, setLedgerOpen] = useState(false)
   const [editOpen, setEditOpen] = useState(false)
+  const [deleteOpen, setDeleteOpen] = useState(false)
+  const [deleting, setDeleting] = useState(false)
   const [qrResult, setQrResult] = useState<StudentEnrollResponse | null>(null)
+
+  const handleDelete = async () => {
+    setDeleting(true)
+    try {
+      await studentsApi.delete(getToken, Number(id))
+      toast.success("Student deleted")
+      router.push("/students")
+    } catch (err) {
+      toast.error((err as Error).message)
+      setDeleting(false)
+    }
+  }
 
   const handleResetTotp = async () => {
     try {
@@ -81,6 +95,9 @@ export default function StudentDetailPage(props: PageProps<"/students/[id]">) {
           <Button variant="outline" onClick={handleResetTotp}>
             <RotateCcw className="mr-2 size-4" />
             Reset TOTP
+          </Button>
+          <Button variant="destructive" onClick={() => setDeleteOpen(true)}>
+            Delete
           </Button>
         </div>
       </div>
@@ -159,6 +176,26 @@ export default function StudentDetailPage(props: PageProps<"/students/[id]">) {
         }}
       />
 
+      {/* Delete confirmation dialog */}
+      <Dialog open={deleteOpen} onOpenChange={setDeleteOpen}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Delete student?</DialogTitle>
+          </DialogHeader>
+          <p className="text-sm text-muted-foreground">
+            This will permanently delete <span className="font-semibold text-foreground">{student.full_name}</span> and all associated data. This action cannot be undone.
+          </p>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setDeleteOpen(false)} disabled={deleting}>
+              Cancel
+            </Button>
+            <Button variant="destructive" onClick={handleDelete} disabled={deleting}>
+              {deleting ? "Deleting…" : "Delete"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
       {/* QR dialog after TOTP reset */}
       <Dialog open={!!qrResult} onOpenChange={(v) => { if (!v) setQrResult(null) }}>
         <DialogContent className="sm:max-w-md">
@@ -170,17 +207,17 @@ export default function StudentDetailPage(props: PageProps<"/students/[id]">) {
               Have the student scan this QR code with their authenticator app.
               This code is shown once and cannot be retrieved again.
             </p>
-            {qrResult?.provisioning_uri && (
+            {qrResult?.totp_provisioning_uri && (
               <div className="rounded-lg border bg-white p-4">
-                <QRCodeSVG value={qrResult.provisioning_uri} size={200} />
+                <QRCodeSVG value={qrResult.totp_provisioning_uri} size={200} />
               </div>
             )}
             <Button
               variant="outline"
               size="sm"
               onClick={() => {
-                if (qrResult?.provisioning_uri) {
-                  navigator.clipboard.writeText(qrResult.provisioning_uri)
+                if (qrResult?.totp_provisioning_uri) {
+                  navigator.clipboard.writeText(qrResult.totp_provisioning_uri)
                   toast.success("URI copied to clipboard")
                 }
               }}
